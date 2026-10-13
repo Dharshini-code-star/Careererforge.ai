@@ -53,8 +53,27 @@ const resumeUpload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024, files: 1 },
 });
+const portfolioImageUpload = (0, multer_1.default)({
+    storage: multer_1.default.memoryStorage(),
+    limits: { fileSize: 1024 * 1024, files: 1 },
+});
+const supportedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const validImageBuffer = (mimeType, buffer) => {
+    if (mimeType === 'image/jpeg')
+        return buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    if (mimeType === 'image/png')
+        return buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    if (mimeType === 'image/webp')
+        return buffer.length > 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+    return false;
+};
 const validKind = (kind) => kinds.includes(kind);
 const validWorkspaceData = (kind, data) => {
+    if (kind === 'portfolio') {
+        if (typeof data.name !== 'string' || !data.name.trim() || data.name.trim().length > 120) {
+            return 'Add your name to the portfolio before saving it.';
+        }
+    }
     if (kind === 'application') {
         const statuses = ['Saved', 'Planned', 'Applied', 'Interview', 'Offer', 'Rejected'];
         if (typeof data.company !== 'string' || !data.company.trim() ||
@@ -85,6 +104,47 @@ router.get('/public/portfolio/:slug', async (req, res, next) => {
     }
 });
 router.use(authMiddleware_js_1.protect);
+router.post('/portfolio/:id/image', (req, res, next) => {
+    portfolioImageUpload.single('image')(req, res, (error) => {
+        if (error instanceof multer_1.MulterError) {
+            res.status(error.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({
+                success: false,
+                message: error.code === 'LIMIT_FILE_SIZE' ? 'Portfolio images must be 1 MB or smaller.' : 'Upload one PNG, JPEG, or WebP image.',
+            });
+            return;
+        }
+        if (error) {
+            next(error);
+            return;
+        }
+        next();
+    });
+}, async (req, res, next) => {
+    try {
+        if (!mongoose_1.default.isValidObjectId(req.params.id)) {
+            res.status(400).json({ success: false, message: 'Invalid portfolio ID.' });
+            return;
+        }
+        const image = req.file;
+        if (!image || !supportedImageMimeTypes.has(image.mimetype) || !validImageBuffer(image.mimetype, image.buffer)) {
+            res.status(400).json({ success: false, message: 'Upload a valid PNG, JPEG, or WebP image.' });
+            return;
+        }
+        const item = await WorkspaceItem_js_1.default.findOne({ _id: req.params.id, userId: req.user._id, kind: 'portfolio' });
+        if (!item) {
+            res.status(404).json({ success: false, message: 'Portfolio not found.' });
+            return;
+        }
+        const photoUrl = `data:${image.mimetype};base64,${image.buffer.toString('base64')}`;
+        item.data = { ...(item.data || {}), photoUrl };
+        item.markModified('data');
+        await item.save();
+        res.json({ success: true, item, photoUrl });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 router.post('/resume/upload', (req, res, next) => {
     resumeUpload.single('resume')(req, res, (error) => {
         if (error instanceof multer_1.MulterError) {
@@ -362,10 +422,11 @@ router.post('/jobs/discover', async (req, res, next) => {
             });
             await JobPosting_js_1.default.bulkWrite(operations, { ordered: false });
         }
-        const storedJobs = await JobPosting_js_1.default.find({
+        const providerListings = discovery.jobs.map((job) => ({ source: job.source, providerId: job.providerId }));
+        const storedJobs = providerListings.length ? await JobPosting_js_1.default.find({
             userId: req.user._id,
-            source: { $in: ['remotive', 'arbeitnow', 'adzuna'] },
-        }).sort({ postedAt: -1, lastSeenAt: -1 }).limit(300).lean();
+            $or: providerListings,
+        }).sort({ postedAt: -1, lastSeenAt: -1 }).limit(300).lean() : [];
         const results = storedJobs.map((job) => {
             const jobText = [job.title, job.description, ...job.tags].filter(Boolean).join('\n');
             const analysis = (0, resumeService_js_1.matchResumeToJob)(fields, jobText);
@@ -646,13 +707,6 @@ router.put('/:kind/:id', async (req, res, next) => {
             res.status(400).json({ success: false, message: validationError });
             return;
         }
-        if (req.params.kind === 'portfolio') {
-            const portfolioName = data.name;
-            if (typeof portfolioName !== 'string' || !portfolioName.trim()) {
-                res.status(400).json({ success: false, message: 'Add your name to the portfolio before saving it.' });
-                return;
-            }
-        }
         const item = await WorkspaceItem_js_1.default.findOneAndUpdate({ _id: req.params.id, userId: req.user._id, kind: req.params.kind }, { title: title.trim(), data }, { new: true, runValidators: true });
         if (!item) {
             res.status(404).json({ success: false, message: 'Workspace item not found.' });
@@ -709,6 +763,23 @@ router.post('/portfolio/:id/publish', async (req, res, next) => {
         item.isPublished = true;
         await item.save();
         res.json({ success: true, item, slug: item.slug });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+router.post('/portfolio/:id/unpublish', async (req, res, next) => {
+    try {
+        if (!mongoose_1.default.isValidObjectId(req.params.id)) {
+            res.status(400).json({ success: false, message: 'Invalid portfolio ID.' });
+            return;
+        }
+        const item = await WorkspaceItem_js_1.default.findOneAndUpdate({ _id: req.params.id, userId: req.user._id, kind: 'portfolio' }, { $set: { isPublished: false } }, { new: true });
+        if (!item) {
+            res.status(404).json({ success: false, message: 'Portfolio not found.' });
+            return;
+        }
+        res.json({ success: true, item });
     }
     catch (error) {
         next(error);

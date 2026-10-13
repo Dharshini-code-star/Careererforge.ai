@@ -40,6 +40,8 @@ export const DashboardPage: React.FC = () => {
   const stats = dashboardData?.stats;
   const metrics = [
     { label: 'Resumes', value: stats?.totalResumes, icon: FileText },
+    { label: 'Relevant jobs', value: stats?.relevantJobs, icon: Search },
+    { label: 'Saved jobs', value: stats?.savedJobs, icon: BriefcaseBusiness },
     { label: 'Published portfolios', value: stats?.publishedPortfolios, icon: Globe2 },
     { label: 'Cover letters', value: stats?.generatedCoverLetters, icon: PenLine },
     { label: 'Applications', value: stats?.trackedApplications, icon: BriefcaseBusiness },

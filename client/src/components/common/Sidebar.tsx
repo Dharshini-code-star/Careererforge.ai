@@ -14,35 +14,35 @@ const groups = [
     label: 'Workspace',
     items: [
       { title: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
-      { title: 'Resume builder', icon: FileText, path: '/resumes' },
-      { title: 'Portfolio', icon: Globe2, path: '/portfolio' },
+      { title: 'Resume Studio', icon: FileText, path: '/resumes' },
+      { title: 'Portfolio Studio', icon: Globe2, path: '/portfolio' },
       { title: 'Cover letters', icon: PenLine, path: '/cover-letters' },
     ],
   },
   {
     label: 'Your search',
     items: [
-      { title: 'Job match', icon: Search, path: '/job-analyzer' },
-      { title: 'Skill gaps', icon: Target, path: '/skill-gap' },
+      { title: 'Job Discovery & Match', icon: Search, path: '/job-analyzer' },
+      { title: 'Job Readiness', icon: Target, path: '/skill-gap' },
       { title: 'Applications', icon: BriefcaseBusiness, path: '/applications' },
     ],
   },
   {
     label: 'Account',
-    items: [{ title: 'Profile & skills', icon: UserRound, path: '/profile' }],
+    items: [{ title: 'Profile & Settings', icon: UserRound, path: '/profile' }],
   },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => (
   <>
     {isOpen && <button aria-label="Close navigation menu" className="fixed inset-0 z-40 bg-slate-950/30 lg:hidden" onClick={onClose} />}
-    <aside aria-label="Workspace navigation" className={`app-sidebar fixed bottom-0 left-0 top-[65px] z-40 flex w-[260px] flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-      <nav className="space-y-7 overflow-y-auto px-3.5 py-6">
+    <aside aria-label="Workspace navigation" className={`app-sidebar fixed bottom-0 left-0 top-[65px] z-40 flex w-[272px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white shadow-xl transition-transform duration-200 lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:translate-x-0 lg:shadow-none ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <nav className="min-h-0 flex-1 space-y-7 overflow-y-auto overscroll-contain px-3 py-5">
         {groups.map((group) => <div key={group.label}>
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[.16em] text-slate-400">{group.label}</p>
           <div className="space-y-1">
             {group.items.map(({ title, icon: Icon, path }) => <NavLink key={path} to={path} onClick={onClose} className={({ isActive }) => `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b8b7e] ${isActive ? 'bg-[#edf5f1] text-[#20665d]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'}`}>
-              {({ isActive }) => <><Icon size={17} strokeWidth={isActive ? 2 : 1.75} /><span>{title}</span>{isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#418a7d]" />}</>}
+              {({ isActive }) => <><Icon size={17} className="shrink-0" strokeWidth={isActive ? 2 : 1.75} /><span className="min-w-0 flex-1 leading-5">{title}</span>{isActive && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[#418a7d]" />}</>}
             </NavLink>)}
           </div>
         </div>)}

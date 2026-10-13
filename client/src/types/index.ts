@@ -22,6 +22,8 @@ export interface DashboardStats {
   publishedPortfolios: number;
   generatedCoverLetters: number;
   trackedApplications: number;
+  relevantJobs: number;
+  savedJobs: number;
   interviewRate: string;
 }
 

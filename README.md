@@ -9,7 +9,7 @@ A responsive career workspace built with React, TypeScript, Tailwind CSS, Expres
 - ATS-readable resume editor with a live preview, transparent content-based readiness checks, job-description keyword matching, and professionally formatted PDF export.
 - Authenticated PDF/DOCX resume uploads with server-side text extraction, private original-file storage, editable extracted fields, side-by-side original/version comparison, and separate saved improvements.
 - Fact-grounded, individually reviewable AI resume suggestions, with automatic score recalculation after accepted edits. Uploaded originals are never overwritten.
-- Portfolio editor with three preview styles and a public share page. Publishing creates a stable public slug.
+- Portfolio Studio with four website templates, live responsive preview, theme accents, image upload, publish/unpublish controls, and a public share page. Publishing creates a stable public slug.
 - AI-assisted cover-letter generation through Gemini, with editable saved drafts and text / PDF export. AI is opt-in and requires a server-side key.
 - Job-specific cover-letter drafts are grounded in a selected, saved resume; discovered-job details show separate resume-quality, match, and readiness estimates with actions to prepare a tailored resume, cover letter, and application-tracker entry.
 - Job discovery includes India, international, and remote-worldwide markets, transparent provider status, direct original application links, and an Excel `.xlsx` export for the currently filtered listings.
