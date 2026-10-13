@@ -307,7 +307,7 @@ const discoverProviderJobs = async (fields, filters = {}) => {
         if (filters.market === 'remote')
             return job.workplace === 'remote';
         if (filters.market === 'india') {
-            return job.source === 'remotive' || /\b(india|mumbai|delhi|bengaluru|bangalore|hyderabad|chennai|pune|kolkata)\b/i.test(job.location);
+            return /\b(india|mumbai|delhi|bengaluru|bangalore|hyderabad|chennai|pune|kolkata)\b/i.test(job.location);
         }
         return true;
     });

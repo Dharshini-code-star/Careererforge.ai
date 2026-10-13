@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
 import WorkspaceItem from '../models/WorkspaceItem.js';
+import JobPosting from '../models/JobPosting.js';
 
 // @desc    Update user profile
 // @route   PUT /api/user/profile
@@ -83,7 +84,7 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response): Prom
       return;
     }
 
-    const [counts, recentItems] = await Promise.all([
+    const [counts, recentItems, relevantJobs, savedJobs] = await Promise.all([
       WorkspaceItem.aggregate([
         { $match: { userId: req.user._id } },
         {
@@ -98,6 +99,8 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response): Prom
         },
       ]),
       WorkspaceItem.find({ userId: req.user._id }).sort({ updatedAt: -1 }).limit(5).lean(),
+      JobPosting.countDocuments({ userId: req.user._id }),
+      JobPosting.countDocuments({ userId: req.user._id, isSaved: true }),
     ]);
     const countFor = (kind: string) => counts.find((item) => item._id === kind);
     const applications = countFor('application');
@@ -116,6 +119,8 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response): Prom
         publishedPortfolios: countFor('portfolio')?.publishedCount || 0,
         generatedCoverLetters: countFor('coverLetter')?.count || 0,
         trackedApplications: applications?.count || 0,
+        relevantJobs,
+        savedJobs,
         interviewRate: decidedCount
           ? `${Math.round(((applications?.interviewCount || 0) / decidedCount) * 100)}%`
           : '—',

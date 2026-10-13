@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDashboardSummary = exports.updateProfile = void 0;
 const User_js_1 = __importDefault(require("../models/User.js"));
 const WorkspaceItem_js_1 = __importDefault(require("../models/WorkspaceItem.js"));
+const JobPosting_js_1 = __importDefault(require("../models/JobPosting.js"));
 // @desc    Update user profile
 // @route   PUT /api/user/profile
 // @access  Private
@@ -87,7 +88,7 @@ const getDashboardSummary = async (req, res) => {
             res.status(401).json({ success: false, message: 'Not authorized' });
             return;
         }
-        const [counts, recentItems] = await Promise.all([
+        const [counts, recentItems, relevantJobs, savedJobs] = await Promise.all([
             WorkspaceItem_js_1.default.aggregate([
                 { $match: { userId: req.user._id } },
                 {
@@ -102,6 +103,8 @@ const getDashboardSummary = async (req, res) => {
                 },
             ]),
             WorkspaceItem_js_1.default.find({ userId: req.user._id }).sort({ updatedAt: -1 }).limit(5).lean(),
+            JobPosting_js_1.default.countDocuments({ userId: req.user._id }),
+            JobPosting_js_1.default.countDocuments({ userId: req.user._id, isSaved: true }),
         ]);
         const countFor = (kind) => counts.find((item) => item._id === kind);
         const applications = countFor('application');
@@ -120,6 +123,8 @@ const getDashboardSummary = async (req, res) => {
                 publishedPortfolios: countFor('portfolio')?.publishedCount || 0,
                 generatedCoverLetters: countFor('coverLetter')?.count || 0,
                 trackedApplications: applications?.count || 0,
+                relevantJobs,
+                savedJobs,
                 interviewRate: decidedCount
                     ? `${Math.round(((applications?.interviewCount || 0) / decidedCount) * 100)}%`
                     : '—',

@@ -18,15 +18,17 @@ export const ProtectedLayout: React.FC = () => {
   }
 
   return (
-    <div className="app-shell min-h-screen flex flex-col">
+    <div className="app-shell flex min-h-screen flex-col">
       <Navbar
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         isSidebarOpen={isSidebarOpen}
       />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex min-h-0 flex-1">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        <main id="main-content" className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-          <Outlet />
+        <main id="main-content" className="min-w-0 flex-1 overflow-x-hidden">
+          <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

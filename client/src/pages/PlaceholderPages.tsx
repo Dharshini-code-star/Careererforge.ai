@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  ArrowDownToLine, ArrowLeft, Bookmark, CheckCircle2, ChevronDown, CircleAlert, CirclePlus,
+  ArrowDownToLine, Bookmark, CheckCircle2, ChevronDown, CircleAlert, CirclePlus,
   Download, ExternalLink, FileText, Globe, LoaderCircle, Plus, Save, Sparkles, Target,
   Trash2, Upload, WandSparkles, X,
 } from 'lucide-react';
@@ -11,6 +11,8 @@ import { workspaceService } from '../services/workspaceService';
 import type { DiscoveredJob, JobMatchResult, JobPosting, JobProviderStatus, JobSearchLink, ResumeAnalysis, ResumeSource, ResumeSuggestion, WorkspaceItem, WorkspaceKind } from '../services/workspaceService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/common/Toast';
+import { PortfolioWebsite } from '../components/portfolio/PortfolioWebsite';
+import { ApplicationTracker as ApplicationTrackerWorkspace } from '../components/applications/ApplicationTracker';
 
 type Fields = Record<string, string>;
 const emptyResume: Fields = {
@@ -20,7 +22,7 @@ const emptyResume: Fields = {
 };
 const emptyPortfolio: Fields = {
   name: '', headline: '', about: '', skills: '', experience: '', education: '', projects: '',
-  certifications: '', email: '', website: '', photoUrl: '', accentColor: '#286b60', template: 'Editorial',
+  certifications: '', achievements: '', email: '', website: '', github: '', linkedin: '', photoUrl: '', accentColor: '#286b60', template: 'Modern Developer',
 };
 const emptyLetter: Fields = { company: '', position: '', jobDescription: '', content: '', resumeId: '' };
 const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#43867a] focus:ring-2 focus:ring-[#43867a]/15';
@@ -661,7 +663,8 @@ export const ResumeBuilderPage: React.FC = () => {
   </div>;
 };
 
-function PortfolioPreview({ fields }: { fields: Fields }) {
+/* Legacy card preview retained in source history for reference; PortfolioWebsite below renders the public site. */
+function LegacyPortfolioPreview({ fields }: { fields: Fields }) {
   const minimal = fields.template === 'Minimal';
   const dark = fields.template === 'Studio';
   const projectList = fields.projects.split('\n').map((project) => project.trim()).filter(Boolean);
@@ -704,10 +707,13 @@ function PortfolioPreview({ fields }: { fields: Fields }) {
   </article>;
 }
 
+void LegacyPortfolioPreview;
+
 export const PortfolioPage: React.FC = () => {
   const workspace = useWorkspace('portfolio', emptyPortfolio, 'My portfolio');
   const { showToast } = useToast();
   const [publishing, setPublishing] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [publicUrl, setPublicUrl] = useState('');
   const importSelectedResume = async () => {
     try {
@@ -748,6 +754,40 @@ export const PortfolioPage: React.FC = () => {
       showToast(errorMessage(error, 'Could not publish this portfolio.'), 'error');
     } finally { setPublishing(false); }
   };
+  const uploadProfileImage = async (file?: File) => {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 1024 * 1024) {
+      showToast('Choose a PNG, JPEG, or WebP image that is 1 MB or smaller.', 'error');
+      return;
+    }
+    const saved = await workspace.save();
+    if (!saved) return;
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const { data } = await api.post(`/workspace/portfolio/${saved._id}/image`, formData);
+      workspace.set('photoUrl', data.photoUrl);
+      workspace.setItems((items) => items.map((item) => item._id === saved._id ? data.item : item));
+      showToast('Profile image uploaded.', 'success');
+    } catch (error) {
+      showToast(errorMessage(error, 'Could not upload the image.'), 'error');
+    } finally { setUploadingImage(false); }
+  };
+  const unpublish = async () => {
+    if (!workspace.selected) return;
+    setPublishing(true);
+    try {
+      const { data } = await api.post(`/workspace/portfolio/${workspace.selected}/unpublish`);
+      workspace.setItems((items) => items.map((item) => item._id === workspace.selected ? data.item : item));
+      setPublicUrl('');
+      showToast('Portfolio unpublished. Its public URL is no longer available.', 'success');
+    } catch (error) {
+      showToast(errorMessage(error, 'Could not unpublish this portfolio.'), 'error');
+    } finally { setPublishing(false); }
+  };
+  const activePortfolio = workspace.items.find((item) => item._id === workspace.selected);
+  const publishedUrl = publicUrl || (activePortfolio?.isPublished && activePortfolio.slug ? `${window.location.origin}/portfolio/${encodeURIComponent(activePortfolio.slug)}` : '');
   return <div className="career-module mx-auto max-w-7xl">
     <PageHeading eyebrow="Share your work" title="Portfolio builder" description="Shape a polished personal portfolio, switch visual styles, and publish a shareable page when it is ready." icon={Globe} />
     <WorkspacePicker {...workspace} kind="portfolio" onSelect={workspace.choose} onNew={workspace.newDocument} onDelete={workspace.remove} />
@@ -759,21 +799,26 @@ export const PortfolioPage: React.FC = () => {
           <TextField label="Name" value={workspace.fields.name} onChange={(v) => workspace.set('name', v)} />
           <TextField label="Headline" value={workspace.fields.headline} onChange={(v) => workspace.set('headline', v)} />
           <TextField label="Contact email" type="email" value={workspace.fields.email} onChange={(v) => workspace.set('email', v)} />
+          <TextField label="GitHub profile URL" value={workspace.fields.github} onChange={(v) => workspace.set('github', v)} placeholder="https://github.com/…" />
+          <TextField label="LinkedIn profile URL" value={workspace.fields.linkedin} onChange={(v) => workspace.set('linkedin', v)} placeholder="https://linkedin.com/in/…" />
           <TextField label="Website URL (HTTPS)" value={workspace.fields.website} onChange={(v) => workspace.set('website', v)} placeholder="https://…" />
           <TextField label="Profile image URL (HTTPS)" value={workspace.fields.photoUrl} onChange={(v) => workspace.set('photoUrl', v)} placeholder="https://…" />
-          <label className="block"><span className={labelClass}>Visual style</span><select className={inputClass} value={workspace.fields.template} onChange={(e) => workspace.set('template', e.target.value)}><option>Editorial</option><option>Studio</option><option>Minimal</option></select></label>
-          <label className="block"><span className={labelClass}>Accent color</span><input aria-label="Portfolio accent color" type="color" value={workspace.fields.accentColor} onChange={(event) => workspace.set('accentColor', event.target.value)} className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white p-1" /></label>
+          <label className="block"><span className={labelClass}>Website template</span><select className={inputClass} value={workspace.fields.template} onChange={(e) => workspace.set('template', e.target.value)}><option>Modern Developer</option><option>Creative Portfolio</option><option>Minimal Professional</option><option>Dark Tech</option></select></label>
+          <label className="block"><span className={labelClass}>Upload profile image</span><input aria-label="Upload profile image" type="file" accept="image/png,image/jpeg,image/webp" disabled={uploadingImage || workspace.busy} onChange={(event) => { void uploadProfileImage(event.target.files?.[0]); event.currentTarget.value = ''; }} className="block w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-[#edf5f1] file:px-2.5 file:py-1.5 file:text-xs file:font-semibold file:text-[#286b60]" /></label>
+          <label className="block"><span className={labelClass}>Theme accent</span><input aria-label="Portfolio theme accent" type="color" value={workspace.fields.accentColor} onChange={(event) => workspace.set('accentColor', event.target.value)} className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white p-1" /></label>
+          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">Each template has its own layout, typography, and palette.</p>
         </div>
         <TextField label="About" value={workspace.fields.about} onChange={(v) => workspace.set('about', v)} multiline rows={5} placeholder="Introduce yourself, your approach, and the kind of work you love…" />
         <TextField label="Skills (comma separated)" value={workspace.fields.skills} onChange={(v) => workspace.set('skills', v)} placeholder="Research, Figma, TypeScript…" />
         <TextField label="Experience" value={workspace.fields.experience} onChange={(v) => workspace.set('experience', v)} multiline rows={5} />
         <TextField label="Education" value={workspace.fields.education} onChange={(v) => workspace.set('education', v)} multiline rows={4} />
-        <TextField label="Projects (one per line)" value={workspace.fields.projects} onChange={(v) => workspace.set('projects', v)} multiline rows={5} placeholder="Project | description | https://github.com/... | https://demo.example" />
+        <TextField label="Projects (one per line)" value={workspace.fields.projects} onChange={(v) => workspace.set('projects', v)} multiline rows={6} placeholder="Title | description | React, Node.js | GitHub URL | demo URL | image URL | verified outcome; another outcome" />
         <TextField label="Certifications" value={workspace.fields.certifications} onChange={(v) => workspace.set('certifications', v)} multiline rows={3} />
-        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4"><SaveButton onClick={() => void workspace.save()} busy={workspace.busy} /><button onClick={() => void publish()} disabled={publishing || workspace.busy} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#19534c] disabled:opacity-60">{publishing ? <LoaderCircle size={16} className="animate-spin" /> : <Globe size={16} />} Publish portfolio</button></div>
-        {publicUrl && <a href={publicUrl} target="_blank" rel="noreferrer" className="block break-all rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{publicUrl} <ExternalLink size={14} className="inline" /></a>}
+        <TextField label="Achievements" value={workspace.fields.achievements} onChange={(v) => workspace.set('achievements', v)} multiline rows={3} placeholder="Only include outcomes and recognition you can verify." />
+        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4"><SaveButton onClick={() => void workspace.save()} busy={workspace.busy} />{activePortfolio?.isPublished ? <button onClick={() => void unpublish()} disabled={publishing} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60">{publishing ? <LoaderCircle size={16} className="animate-spin" /> : <Globe size={16} />} Unpublish portfolio</button> : <button onClick={() => void publish()} disabled={publishing || workspace.busy} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#19534c] disabled:opacity-60">{publishing ? <LoaderCircle size={16} className="animate-spin" /> : <Globe size={16} />} Publish portfolio</button>}</div>
+        {publishedUrl && <a href={publishedUrl} target="_blank" rel="noreferrer" className="block break-all rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{publishedUrl} <ExternalLink size={14} className="inline" /></a>}
       </section>
-      <div className="xl:sticky xl:top-5 xl:self-start"><p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Portfolio preview</p><PortfolioPreview fields={workspace.fields} /></div>
+      <div className="xl:sticky xl:top-5 xl:self-start"><p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Live website preview</p><PortfolioWebsite fields={workspace.fields} preview /></div>
     </div>}
   </div>;
 };
@@ -869,6 +914,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   const [providers, setProviders] = useState<JobProviderStatus[]>([]);
   const [searchLinks, setSearchLinks] = useState<JobSearchLink[]>([]);
   const [roleFilter, setRoleFilter] = useState('');
+  const [skillsFilter, setSkillsFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [marketFilter, setMarketFilter] = useState<'india' | 'international' | 'remote'>('india');
   const [workplaceFilter, setWorkplaceFilter] = useState('all');
@@ -982,7 +1028,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
     setDiscoveryError('');
     try {
       const response = await workspaceService.discoverJobs(selectedResumeId, {
-        role: roleFilter.trim() || undefined,
+        role: [roleFilter.trim(), skillsFilter.trim()].filter(Boolean).join(' ') || undefined,
         location: locationFilter.trim() || undefined,
         market: marketFilter,
       });
@@ -998,7 +1044,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
     } finally {
       if (requestId === discoveryRequestRef.current) setDiscoveryBusy(false);
     }
-  }, [selectedResumeId, roleFilter, locationFilter, marketFilter]);
+  }, [selectedResumeId, roleFilter, skillsFilter, locationFilter, marketFilter]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => { void refreshDiscovery(); }, selectedResumeId ? 450 : 0);
@@ -1084,6 +1130,8 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
     if (roleFilter.trim() && !job.title.toLowerCase().includes(roleFilter.trim().toLowerCase()) &&
         !(job.tags || []).some((tag) => tag.toLowerCase().includes(roleFilter.trim().toLowerCase()))) return false;
     if (locationFilter.trim() && !job.location.toLowerCase().includes(locationFilter.trim().toLowerCase())) return false;
+    const requestedSkills = skillsFilter.split(',').map((skill) => skill.trim().toLowerCase()).filter(Boolean);
+    if (requestedSkills.length && !requestedSkills.every((skill) => searchable.includes(skill))) return false;
     if (workplaceFilter !== 'all' && job.workplace !== workplaceFilter) return false;
     if (employmentFilter === 'internship' && !/\b(intern|internship|trainee|graduate)\b/i.test(`${job.employmentType} ${job.title} ${searchable}`)) return false;
     if (employmentFilter === 'full-time' && !/\b(full.?time|permanent)\b/i.test(job.employmentType)) return false;
@@ -1102,7 +1150,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   });
   useEffect(() => {
     setVisibleJobCount(20);
-  }, [roleFilter, locationFilter, workplaceFilter, employmentFilter, experienceFilter, dateFilter, savedOnly, selectedResumeId]);
+  }, [roleFilter, skillsFilter, locationFilter, workplaceFilter, employmentFilter, experienceFilter, dateFilter, savedOnly, selectedResumeId]);
   const result = results[selectedJobId];
   const activeJob = jobs.find((job) => job._id === selectedJobId);
   const selectedDiscoveredJob = discovered.find((job) => job._id === selectedDiscoveredJobId);
@@ -1111,7 +1159,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
     <PageHeading
       eyebrow={skillFocus ? 'Resume-grounded skill gaps' : 'Make informed applications'}
       title={skillFocus ? 'Skill gap & readiness' : 'Job analyzer & match'}
-      description="Save a real job description, select one of your saved resumes, and review evidence-based skill matches, gaps, and a separate readiness assessment. No external job feed or employer prediction is implied."
+      description="Discover available provider listings or save a job description, then review evidence-based match, ATS quality, and readiness estimates using your selected saved resume."
       icon={skillFocus ? Target : WandSparkles}
     />
     {loading ? <LoadingState /> : loadError ? <section className={`${cardClass} p-6`} role="alert">
@@ -1153,6 +1201,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <TextField label="Role / keywords" value={roleFilter} onChange={setRoleFilter} placeholder="Use resume role or refine search" />
+          <TextField label="Skills" value={skillsFilter} onChange={setSkillsFilter} placeholder="React, Node.js, SQL" />
             <label className="block"><span className={labelClass}>Job market</span><select className={inputClass} value={marketFilter} onChange={(event) => setMarketFilter(event.target.value as 'india' | 'international' | 'remote')}><option value="india">India (prioritized)</option><option value="international">International</option><option value="remote">Remote worldwide</option></select></label>
             <TextField label="City / location" value={locationFilter} onChange={setLocationFilter} placeholder="Optional city, region, or country" />
           <label className="block"><span className={labelClass}>Workplace</span><select className={inputClass} value={workplaceFilter} onChange={(event) => setWorkplaceFilter(event.target.value)}><option value="all">Any workplace</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="on-site">On-site</option></select></label>
@@ -1346,7 +1395,7 @@ export const JobAnalyzerPage: React.FC = () => <JobWorkspacePage />;
 export const SkillGapPage: React.FC = () => <JobWorkspacePage skillFocus />;
 
 const stages = ['Saved', 'Planned', 'Applied', 'Interview', 'Offer', 'Rejected'];
-export const ApplicationTrackerPage: React.FC = () => {
+const LegacyApplicationTrackerPage: React.FC = () => {
   const workspace = useWorkspace('application', { company: '', role: '', status: 'Saved', date: '', notes: '', link: '' }, 'Application');
   const { showToast } = useToast();
   const setStatus = (status: string) => workspace.set('status', status);
@@ -1365,6 +1414,10 @@ export const ApplicationTrackerPage: React.FC = () => {
     </div>}</div>;
 };
 
+void LegacyApplicationTrackerPage;
+
+export const ApplicationTrackerPage: React.FC = () => <ApplicationTrackerWorkspace />;
+
 export const PublicPortfolioPage: React.FC = () => {
   const { slug } = useParams();
   const [item, setItem] = useState<WorkspaceItem | null>(null);
@@ -1378,7 +1431,7 @@ export const PublicPortfolioPage: React.FC = () => {
   if (error) return <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center"><div><h1 className="text-2xl font-bold text-white">Portfolio unavailable</h1><p className="mt-2 text-slate-400">{error}</p><Link to="/" className="mt-5 inline-block text-cyan-300">CareerForgeAI home</Link></div></div>;
   if (!item) return <LoadingState />;
   const fields = Object.fromEntries(Object.entries(item.data).map(([key, value]) => [key, typeof value === 'string' ? value : '']));
-  return <main className="min-h-screen bg-slate-950 px-4 py-10 sm:px-8"><div className="mx-auto max-w-4xl"><Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"><ArrowLeft size={15} /> CareerForgeAI</Link><PortfolioPreview fields={fields} /></div></main>;
+  return <PortfolioWebsite fields={fields} />;
 };
 
 function LoadingState() {
