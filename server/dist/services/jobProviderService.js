@@ -208,10 +208,10 @@ const fetchArbeitnow = async () => {
     setCached(key, jobs);
     return withStatus('arbeitnow', 'Arbeitnow', jobs, 'Listings supplied by Arbeitnow from employer ATS feeds, primarily in Europe; source links are retained.');
 };
-const fetchAdzuna = async (search, location) => {
+const fetchAdzuna = async (search, location, market = 'india') => {
     const appId = process.env.ADZUNA_APP_ID?.trim();
     const appKey = process.env.ADZUNA_APP_KEY?.trim();
-    const country = (process.env.ADZUNA_COUNTRY || 'gb').trim().toLowerCase();
+    const country = (market === 'india' ? 'in' : process.env.ADZUNA_COUNTRY || 'gb').trim().toLowerCase();
     if (!appId || !appKey) {
         return { status: { id: 'adzuna', name: 'Adzuna', status: 'unavailable', message: 'Configure ADZUNA_APP_ID and ADZUNA_APP_KEY to enable the official Adzuna API.', resultCount: 0 }, jobs: [] };
     }
@@ -263,7 +263,7 @@ const discoverProviderJobs = async (fields, filters = {}) => {
     const providerTasks = [
         fetchRemotive(search),
         fetchArbeitnow(),
-        fetchAdzuna(search, filters.location),
+        fetchAdzuna(search, filters.location, filters.market),
     ];
     const outcomes = await Promise.all(providerTasks.map(async (task, index) => {
         const names = [
@@ -303,9 +303,17 @@ const discoverProviderJobs = async (fields, filters = {}) => {
         seenListings.add(identity);
         uniqueJobs.set(identity, job);
     }
+    const jobs = [...uniqueJobs.values()].filter((job) => {
+        if (filters.market === 'remote')
+            return job.workplace === 'remote';
+        if (filters.market === 'india') {
+            return job.source === 'remotive' || /\b(india|mumbai|delhi|bengaluru|bangalore|hyderabad|chennai|pune|kolkata)\b/i.test(job.location);
+        }
+        return true;
+    });
     return {
         providers: outcomes.map((outcome) => outcome.status),
-        jobs: [...uniqueJobs.values()],
+        jobs,
         searchLinks: (0, exports.buildJobSearchLinks)(fields, filters.role, filters.location),
     };
 };

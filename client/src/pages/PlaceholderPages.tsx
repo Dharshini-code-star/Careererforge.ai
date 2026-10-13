@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowDownToLine, ArrowLeft, Bookmark, CheckCircle2, ChevronDown, CircleAlert, CirclePlus,
   Download, ExternalLink, FileText, Globe, LoaderCircle, Plus, Save, Sparkles, Target,
   Trash2, Upload, WandSparkles, X,
 } from 'lucide-react';
+import { strToU8, zipSync } from 'fflate';
 import { api } from '../services/api';
 import { workspaceService } from '../services/workspaceService';
 import type { DiscoveredJob, JobMatchResult, JobPosting, JobProviderStatus, JobSearchLink, ResumeAnalysis, ResumeSource, ResumeSuggestion, WorkspaceItem, WorkspaceKind } from '../services/workspaceService';
@@ -18,12 +19,74 @@ const emptyResume: Fields = {
   template: 'Meridian', sourceId: '', sourceFileName: '',
 };
 const emptyPortfolio: Fields = {
-  name: '', headline: '', about: '', skills: '', projects: '', email: '', template: 'Editorial',
+  name: '', headline: '', about: '', skills: '', experience: '', education: '', projects: '',
+  certifications: '', email: '', website: '', photoUrl: '', accentColor: '#286b60', template: 'Editorial',
 };
-const emptyLetter: Fields = { company: '', position: '', jobDescription: '', content: '' };
+const emptyLetter: Fields = { company: '', position: '', jobDescription: '', content: '', resumeId: '' };
 const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#43867a] focus:ring-2 focus:ring-[#43867a]/15';
 const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600';
 const cardClass = 'rounded-xl border border-slate-200 bg-white shadow-[0_12px_35px_-30px_rgba(15,23,42,.28)]';
+
+function downloadJobsExcel(jobs: DiscoveredJob[]) {
+  const columns = ['Job title', 'Company', 'Location', 'Type', 'Match score', 'Readiness score', 'Matching skills', 'Missing skills', 'Source', 'Posting date', 'Application URL'];
+  const rows: Array<Array<string | number>> = [
+    columns,
+    ...jobs.map((job) => [
+      job.title,
+      job.company,
+      job.location || '',
+      job.employmentType || '',
+      job.matchScore,
+      job.readinessScore,
+      job.matchedSkills.join(', '),
+      job.missingSkills.join(', '),
+      job.source,
+      job.postedAt ? new Date(job.postedAt).toLocaleDateString() : '',
+      job.url,
+    ]),
+  ];
+  const columnName = (index: number) => {
+    let name = '';
+    for (let current = index + 1; current > 0; current = Math.floor((current - 1) / 26)) {
+      name = String.fromCharCode(65 + ((current - 1) % 26)) + name;
+    }
+    return name;
+  };
+  const escapeXml = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+  const sheetRows = rows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, columnIndex) => {
+    const cell = `${columnName(columnIndex)}${rowIndex + 1}`;
+    return typeof value === 'number'
+      ? `<c r="${cell}"><v>${value}</v></c>`
+      : `<c r="${cell}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
+  }).join('')}</row>`).join('');
+  const workbook = zipSync({
+    '[Content_Types].xml': strToU8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'),
+    '_rels/.rels': strToU8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'),
+    'xl/workbook.xml': strToU8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Relevant Jobs" sheetId="1" r:id="rId1"/></sheets></workbook>'),
+    'xl/_rels/workbook.xml.rels': strToU8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'),
+    'xl/worksheets/sheet1.xml': strToU8(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${sheetRows}</sheetData></worksheet>`),
+  });
+  const url = URL.createObjectURL(new Blob([workbook], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'careerforge-relevant-jobs.xlsx';
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function safePublicUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
 
 function valueOf(data: Record<string, unknown>, key: string): string {
   return typeof data[key] === 'string' ? data[key] as string : '';
@@ -102,7 +165,7 @@ function useWorkspace(kind: WorkspaceKind, initial: Fields, initialTitle: string
     setSelected(id);
     const item = items.find((entry) => entry._id === id);
     setTitle(item?.title || initialTitle);
-    setFields(item ? Object.fromEntries(Object.keys(initial).map((key) => [key, valueOf(item.data, key)])) : {
+    setFields(item ? Object.fromEntries(Object.keys(initial).map((key) => [key, valueOf(item.data, key) || initial[key] || ''])) : {
       ...initial, name: user?.name || '', email: user?.email || '',
       headline: user?.headline || '', skills: user?.skills?.join(', ') || '',
     });
@@ -246,6 +309,7 @@ function ResumeComparison({ original, current }: { original: Record<string, stri
 
 export const ResumeBuilderPage: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const requestedTemplate = searchParams.get('template');
   const templateOptions = ['Meridian', 'Clifton', 'Sora'] as const;
   const selectedTemplate = templateOptions.find((template) => template === requestedTemplate) || 'Meridian';
@@ -261,6 +325,7 @@ export const ResumeBuilderPage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [downloadBusy, setDownloadBusy] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const handledTailorJob = useRef('');
   const { showToast } = useToast();
   const loadSources = useCallback(async () => {
     try {
@@ -270,6 +335,29 @@ export const ResumeBuilderPage: React.FC = () => {
     }
   }, [showToast]);
   useEffect(() => { void loadSources(); }, [loadSources]);
+  useEffect(() => {
+    const job = (location.state as { job?: { title?: string; company?: string; description?: string } } | null)?.job;
+    if (!job?.description || handledTailorJob.current === job.description) return;
+    handledTailorJob.current = job.description;
+    void workspaceService.getSelectedResume().then(({ resume }) => {
+      if (!resume) {
+        showToast('Save and select a resume before creating a job-specific version.', 'error');
+        return;
+      }
+      workspace.choose('');
+      Object.entries(resume.data).forEach(([key, value]) => {
+        if (typeof value === 'string') workspace.set(key, value);
+      });
+      workspace.setTitle(`${job.title || 'Resume'} · ${job.company || 'Tailored'}`.slice(0, 120));
+      setJobDescription(job.description || '');
+      setAnalysis(null);
+      setAnalysisSignature('');
+      setSuggestions([]);
+      showToast('A separate copy of your selected resume is ready to tailor for this job.', 'success');
+    }).catch((error: unknown) => {
+      showToast(errorMessage(error, 'Could not load your selected resume.'), 'error');
+    });
+  }, [location.state, showToast]);
   const resumeText = (fields: Fields) => Object.entries(fields)
     .filter(([key]) => !['template', 'sourceId', 'sourceFileName'].includes(key))
     .map(([key, value]) => `${key}:\n${value}`)
@@ -578,16 +666,40 @@ function PortfolioPreview({ fields }: { fields: Fields }) {
   const dark = fields.template === 'Studio';
   const projectList = fields.projects.split('\n').map((project) => project.trim()).filter(Boolean);
   const skillList = fields.skills.split(',').map((skill) => skill.trim()).filter(Boolean);
+  const sections = [
+    ['Experience', fields.experience],
+    ['Education', fields.education],
+    ['Certifications', fields.certifications],
+  ].filter((section): section is [string, string] => Boolean(section[1]?.trim()));
+  const accentColor = /^#[0-9a-fA-F]{6}$/.test(fields.accentColor) ? fields.accentColor : '#286b60';
+  const photoUrl = safePublicUrl(fields.photoUrl);
+  const websiteUrl = safePublicUrl(fields.website);
   return <article className={`portfolio-paper min-h-[570px] overflow-hidden ${dark ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-900'} ${dark ? 'font-mono' : ''}`}>
-    {minimal ? <div className="h-px bg-slate-200" /> : <div className={`h-1.5 ${dark ? 'bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400' : 'bg-[#dcebe5]'}`} />}
+    {minimal ? <div className="h-px bg-slate-200" /> : <div className={`h-1.5 ${dark ? 'bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400' : ''}`} style={!dark ? { backgroundColor: accentColor } : undefined} />}
     <div className="p-7 sm:p-9">
       <p className={`text-xs font-bold uppercase tracking-[.22em] ${dark ? 'text-cyan-300' : 'text-slate-500'}`}>{fields.template} · Portfolio</p>
+      {photoUrl && <img src={photoUrl} alt={`${fields.name || 'Profile'} portrait`} className="mt-5 h-20 w-20 rounded-full object-cover" />}
+      {fields.photoUrl && !photoUrl && <p role="alert" className="mt-3 text-xs text-rose-700">Profile image needs a valid HTTPS URL.</p>}
       <h2 className="mt-8 text-4xl font-bold tracking-tight">{fields.name || 'Your name'}</h2><p className={`mt-2 text-lg ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{fields.headline || 'Your professional headline'}</p>
       <p className={`mt-6 whitespace-pre-wrap text-sm leading-7 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{fields.about || 'A short introduction about what you do and what you care about.'}</p>
       <h3 className={`mt-8 text-sm font-bold uppercase tracking-widest ${dark ? 'text-white' : 'text-slate-900'}`}>Selected work</h3>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">{projectList.length ? projectList.map((project, index) => <div key={`${index}-${project}`} className={`rounded-xl border p-4 text-sm ${dark ? 'border-slate-800 bg-slate-900 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>{project}</div>) : <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">Add projects, one per line.</div>}</div>
-      <h3 className={`mt-8 text-sm font-bold uppercase tracking-widest ${dark ? 'text-white' : 'text-slate-900'}`}>Expertise</h3><div className="mt-3 flex flex-wrap gap-2">{skillList.map((skill) => <span key={skill} className={`rounded-full px-3 py-1.5 text-xs ${dark ? 'bg-cyan-300/10 text-cyan-200' : 'bg-[#edf5f1] text-[#286e63]'}`}>{skill}</span>)}</div>
-      <a href={`mailto:${fields.email}`} className={`mt-8 inline-flex items-center gap-2 text-sm font-semibold ${dark ? 'text-cyan-200' : 'text-[#286e63]'}`}>{fields.email || 'Contact me'} <ExternalLink size={14} /></a>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">{projectList.length ? projectList.map((project, index) => {
+        const [name, description, github, demo] = project.split('|').map((part) => part.trim());
+        const githubUrl = safePublicUrl(github || '');
+        const demoUrl = safePublicUrl(demo || '');
+        return <div key={`${index}-${project}`} className={`rounded-xl border p-4 text-sm ${dark ? 'border-slate-800 bg-slate-900 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
+          <p className="font-semibold">{name}</p>
+          {description && <p className="mt-2 leading-6">{description}</p>}
+          <div className="mt-3 flex flex-wrap gap-3">{githubUrl && <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="font-semibold" style={!dark ? { color: accentColor } : undefined}>GitHub<ExternalLink className="ml-1 inline" size={12} /></a>}{demoUrl && <a href={demoUrl} target="_blank" rel="noopener noreferrer" className="font-semibold" style={!dark ? { color: accentColor } : undefined}>Live demo<ExternalLink className="ml-1 inline" size={12} /></a>}</div>
+        </div>;
+      }) : <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">Add projects, one per line.</div>}</div>
+      <h3 className={`mt-8 text-sm font-bold uppercase tracking-widest ${dark ? 'text-white' : 'text-slate-900'}`}>Expertise</h3><div className="mt-3 flex flex-wrap gap-2">{skillList.map((skill) => <span key={skill} className="rounded-full px-3 py-1.5 text-xs" style={!dark ? { backgroundColor: `${accentColor}18`, color: accentColor } : undefined}>{skill}</span>)}</div>
+      {sections.map(([heading, content]) => <section key={heading}><h3 className={`mt-8 text-sm font-bold uppercase tracking-widest ${dark ? 'text-white' : 'text-slate-900'}`}>{heading}</h3><p className={`mt-3 whitespace-pre-wrap text-sm leading-6 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{content}</p></section>)}
+      {(fields.email || websiteUrl) && <h3 className={`mt-8 text-sm font-bold uppercase tracking-widest ${dark ? 'text-white' : 'text-slate-900'}`}>Contact</h3>}
+      <div className="mt-8 flex flex-wrap gap-4">
+        {fields.email && <a href={`mailto:${fields.email}`} className={`inline-flex items-center gap-2 text-sm font-semibold ${dark ? 'text-cyan-200' : ''}`} style={!dark ? { color: accentColor } : undefined}>{fields.email}<ExternalLink size={14} /></a>}
+        {websiteUrl && <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 text-sm font-semibold ${dark ? 'text-cyan-200' : ''}`} style={!dark ? { color: accentColor } : undefined}>{fields.website}<ExternalLink size={14} /></a>}
+      </div>
     </div>
   </article>;
 }
@@ -597,6 +709,32 @@ export const PortfolioPage: React.FC = () => {
   const { showToast } = useToast();
   const [publishing, setPublishing] = useState(false);
   const [publicUrl, setPublicUrl] = useState('');
+  const importSelectedResume = async () => {
+    try {
+      const { resume } = await workspaceService.getSelectedResume();
+      if (!resume) {
+        showToast('Save and select a resume before importing portfolio content.', 'error');
+        return;
+      }
+      const fields = resume.data;
+      const imported: Record<string, string> = {
+        name: typeof fields.name === 'string' ? fields.name : '',
+        headline: typeof fields.headline === 'string' ? fields.headline : '',
+        about: typeof fields.summary === 'string' ? fields.summary : '',
+        skills: typeof fields.skills === 'string' ? fields.skills : '',
+        experience: typeof fields.experience === 'string' ? fields.experience : '',
+        education: typeof fields.education === 'string' ? fields.education : '',
+        projects: typeof fields.projects === 'string' ? fields.projects : '',
+        certifications: typeof fields.certifications === 'string' ? fields.certifications : '',
+        email: typeof fields.email === 'string' ? fields.email : '',
+        website: typeof fields.website === 'string' ? fields.website : '',
+      };
+      Object.entries(imported).forEach(([key, value]) => workspace.set(key, value));
+      showToast(`Copied content from “${resume.title}” into this portfolio. Your resume was not changed.`, 'success');
+    } catch (error) {
+      showToast(errorMessage(error, 'Could not import your selected resume.'), 'error');
+    }
+  };
   const publish = async () => {
     const saved = await workspace.save();
     if (!saved) return;
@@ -615,17 +753,23 @@ export const PortfolioPage: React.FC = () => {
     <WorkspacePicker {...workspace} kind="portfolio" onSelect={workspace.choose} onNew={workspace.newDocument} onDelete={workspace.remove} />
     {workspace.loading ? <LoadingState /> : <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(380px,.9fr)]">
       <section className={`${cardClass} space-y-4 p-5 sm:p-6`}>
-        <div><p className="text-sm font-semibold text-slate-900">Your story</p><p className="mt-1 text-xs text-slate-500">The public portfolio is generated from the saved content below.</p></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold text-slate-900">Your story</p><p className="mt-1 text-xs text-slate-500">The public portfolio is generated from the saved content below.</p></div><button onClick={() => void importSelectedResume()} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#8ebcb1]"><Download size={14} />Import selected resume</button></div>
         <TextField label="Portfolio title" value={workspace.title} onChange={workspace.setTitle} placeholder="My design portfolio" />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Name" value={workspace.fields.name} onChange={(v) => workspace.set('name', v)} />
           <TextField label="Headline" value={workspace.fields.headline} onChange={(v) => workspace.set('headline', v)} />
           <TextField label="Contact email" type="email" value={workspace.fields.email} onChange={(v) => workspace.set('email', v)} />
+          <TextField label="Website URL (HTTPS)" value={workspace.fields.website} onChange={(v) => workspace.set('website', v)} placeholder="https://…" />
+          <TextField label="Profile image URL (HTTPS)" value={workspace.fields.photoUrl} onChange={(v) => workspace.set('photoUrl', v)} placeholder="https://…" />
           <label className="block"><span className={labelClass}>Visual style</span><select className={inputClass} value={workspace.fields.template} onChange={(e) => workspace.set('template', e.target.value)}><option>Editorial</option><option>Studio</option><option>Minimal</option></select></label>
+          <label className="block"><span className={labelClass}>Accent color</span><input aria-label="Portfolio accent color" type="color" value={workspace.fields.accentColor} onChange={(event) => workspace.set('accentColor', event.target.value)} className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white p-1" /></label>
         </div>
         <TextField label="About" value={workspace.fields.about} onChange={(v) => workspace.set('about', v)} multiline rows={5} placeholder="Introduce yourself, your approach, and the kind of work you love…" />
         <TextField label="Skills (comma separated)" value={workspace.fields.skills} onChange={(v) => workspace.set('skills', v)} placeholder="Research, Figma, TypeScript…" />
-        <TextField label="Projects (one per line)" value={workspace.fields.projects} onChange={(v) => workspace.set('projects', v)} multiline rows={5} placeholder="Project name — what you built and its impact" />
+        <TextField label="Experience" value={workspace.fields.experience} onChange={(v) => workspace.set('experience', v)} multiline rows={5} />
+        <TextField label="Education" value={workspace.fields.education} onChange={(v) => workspace.set('education', v)} multiline rows={4} />
+        <TextField label="Projects (one per line)" value={workspace.fields.projects} onChange={(v) => workspace.set('projects', v)} multiline rows={5} placeholder="Project | description | https://github.com/... | https://demo.example" />
+        <TextField label="Certifications" value={workspace.fields.certifications} onChange={(v) => workspace.set('certifications', v)} multiline rows={3} />
         <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4"><SaveButton onClick={() => void workspace.save()} busy={workspace.busy} /><button onClick={() => void publish()} disabled={publishing || workspace.busy} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#19534c] disabled:opacity-60">{publishing ? <LoaderCircle size={16} className="animate-spin" /> : <Globe size={16} />} Publish portfolio</button></div>
         {publicUrl && <a href={publicUrl} target="_blank" rel="noreferrer" className="block break-all rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{publicUrl} <ExternalLink size={14} className="inline" /></a>}
       </section>
@@ -636,16 +780,45 @@ export const PortfolioPage: React.FC = () => {
 
 export const CoverLetterPage: React.FC = () => {
   const workspace = useWorkspace('coverLetter', emptyLetter, 'Untitled cover letter');
-  const { user } = useAuth();
+  const location = useLocation();
   const { showToast } = useToast();
+  const [resumes, setResumes] = useState<WorkspaceItem[]>([]);
+  const [resumeLoadError, setResumeLoadError] = useState('');
   const [generating, setGenerating] = useState(false);
+  useEffect(() => {
+    let active = true;
+    Promise.all([workspaceService.list('resume'), workspaceService.getSelectedResume()])
+      .then(([items, selection]) => {
+        if (!active) return;
+        setResumes(items);
+        const state = location.state as { job?: { title?: string; company?: string; description?: string } } | null;
+        if (state?.job) {
+          workspace.set('company', state.job.company || '');
+          workspace.set('position', state.job.title || '');
+          workspace.set('jobDescription', state.job.description || '');
+          workspace.set('resumeId', selection.resumeId || items[0]?._id || '');
+          workspace.setTitle(`${state.job.title || 'Cover letter'} · ${state.job.company || ''}`.slice(0, 120));
+        } else if (!workspace.fields.resumeId) {
+          workspace.set('resumeId', selection.resumeId || items[0]?._id || '');
+        }
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setResumeLoadError(errorMessage(error, 'Could not load your saved resumes.'));
+      });
+    return () => { active = false; };
+  }, [location.state, showToast]);
   const generate = async () => {
+    if (!workspace.fields.resumeId) {
+      showToast('Save a resume before generating a job-specific cover letter.', 'error');
+      return;
+    }
     setGenerating(true);
     try {
       const { data } = await api.post('/workspace/generate-cover-letter', {
         company: workspace.fields.company, position: workspace.fields.position,
         jobDescription: workspace.fields.jobDescription,
-        resume: { name: user?.name, headline: user?.headline, skills: user?.skills, targetRole: user?.targetRole },
+        resumeId: workspace.fields.resumeId,
       });
       workspace.set('content', data.content);
       showToast('Draft generated. Review it carefully before sending.', 'success');
@@ -668,6 +841,8 @@ export const CoverLetterPage: React.FC = () => {
     {workspace.loading ? <LoadingState /> : <div className="grid gap-5 lg:grid-cols-2">
       <section className={`${cardClass} space-y-4 p-5 sm:p-6`}>
         <TextField label="Document title" value={workspace.title} onChange={workspace.setTitle} placeholder="Product Designer — Acme" />
+        <label className="block"><span className={labelClass}>Saved resume used for this letter</span><select className={inputClass} value={workspace.fields.resumeId} onChange={(event) => workspace.set('resumeId', event.target.value)}><option value="">Select a saved resume…</option>{resumes.map((resume) => <option key={resume._id} value={resume._id}>{resume.title}</option>)}</select></label>
+        {resumeLoadError && <p role="alert" className="text-sm text-rose-700">{resumeLoadError}</p>}
         <div className="grid gap-4 sm:grid-cols-2"><TextField label="Company" value={workspace.fields.company} onChange={(v) => workspace.set('company', v)} placeholder="Company name" /><TextField label="Position" value={workspace.fields.position} onChange={(v) => workspace.set('position', v)} placeholder="Role title" /></div>
         <TextField label="Job description" value={workspace.fields.jobDescription} onChange={(v) => workspace.set('jobDescription', v)} multiline rows={8} placeholder="Paste the job description to personalize your letter…" />
         <button onClick={() => void generate()} disabled={generating} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#edf5f1] px-4 py-2 text-sm font-semibold text-[#286b60] transition hover:bg-[#e0eee8] disabled:opacity-60">{generating ? <LoaderCircle size={16} className="animate-spin" /> : <WandSparkles size={16} />} Generate personalized draft</button>
@@ -686,6 +861,7 @@ const emptyJob = { title: '', company: '', description: '' };
 const pillClass = 'rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700';
 
 function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [resumes, setResumes] = useState<WorkspaceItem[]>([]);
   const [jobs, setJobs] = useState<JobPosting[]>([]);
@@ -694,6 +870,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   const [searchLinks, setSearchLinks] = useState<JobSearchLink[]>([]);
   const [roleFilter, setRoleFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
+  const [marketFilter, setMarketFilter] = useState<'india' | 'international' | 'remote'>('india');
   const [workplaceFilter, setWorkplaceFilter] = useState('all');
   const [employmentFilter, setEmploymentFilter] = useState('all');
   const [experienceFilter, setExperienceFilter] = useState('all');
@@ -705,6 +882,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   const [refreshCount, setRefreshCount] = useState(0);
   const [selectedResumeId, setSelectedResumeId] = useState('');
   const [selectedJobId, setSelectedJobId] = useState('');
+  const [selectedDiscoveredJobId, setSelectedDiscoveredJobId] = useState('');
   const [results, setResults] = useState<Record<string, JobMatchResult>>({});
   const [form, setForm] = useState(emptyJob);
   const [editingJobId, setEditingJobId] = useState('');
@@ -713,9 +891,11 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
   const selectedJobIdRef = useRef('');
+  const selectedResumeIdRef = useRef('');
   const matchRequestRef = useRef(0);
   const discoveryRequestRef = useRef(0);
   selectedJobIdRef.current = selectedJobId;
+  selectedResumeIdRef.current = selectedResumeId;
 
   const calculateMatches = useCallback(async (
     resumeId: string,
@@ -749,6 +929,8 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   const loadWorkspace = useCallback(async (selectFirst = true) => {
     setLoading(true);
     setLoadError('');
+    setDiscovered([]);
+    setSelectedDiscoveredJobId('');
     try {
       const [resumeItems, jobItems, selection] = await Promise.all([
         workspaceService.list('resume'),
@@ -802,20 +984,21 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
       const response = await workspaceService.discoverJobs(selectedResumeId, {
         role: roleFilter.trim() || undefined,
         location: locationFilter.trim() || undefined,
+        market: marketFilter,
       });
-      if (requestId !== discoveryRequestRef.current) return;
+      if (requestId !== discoveryRequestRef.current || response.resumeId !== selectedResumeIdRef.current) return;
       setDiscovered(response.jobs);
       setProviders(response.providers);
       setSearchLinks(response.searchLinks);
     } catch (error) {
-      if (requestId === discoveryRequestRef.current) {
+      if (requestId === discoveryRequestRef.current && selectedResumeId === selectedResumeIdRef.current) {
         setDiscovered([]);
         setDiscoveryError(errorMessage(error, 'Could not discover jobs from the configured providers.'));
       }
     } finally {
       if (requestId === discoveryRequestRef.current) setDiscoveryBusy(false);
     }
-  }, [selectedResumeId, roleFilter, locationFilter]);
+  }, [selectedResumeId, roleFilter, locationFilter, marketFilter]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => { void refreshDiscovery(); }, selectedResumeId ? 450 : 0);
@@ -826,6 +1009,8 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
     if (!resumeId) return;
     try {
       const selection = await workspaceService.selectResume(resumeId);
+      setDiscovered([]);
+      setSelectedDiscoveredJobId('');
       setSelectedResumeId(selection.resumeId);
       await calculateMatches(selection.resumeId, jobs);
     } catch (error) {
@@ -920,6 +1105,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   }, [roleFilter, locationFilter, workplaceFilter, employmentFilter, experienceFilter, dateFilter, savedOnly, selectedResumeId]);
   const result = results[selectedJobId];
   const activeJob = jobs.find((job) => job._id === selectedJobId);
+  const selectedDiscoveredJob = discovered.find((job) => job._id === selectedDiscoveredJobId);
 
   return <div className="career-module mx-auto max-w-7xl">
     <PageHeading
@@ -958,13 +1144,17 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-semibold text-slate-900">Discover real jobs & internships</h2>
             <p className="mt-1 text-xs leading-5 text-slate-500">Public provider listings are imported with source links. Unavailable boards are provided as direct search links instead.</p></div>
-          <button onClick={() => setRefreshCount((count) => count + 1)} disabled={!selectedResumeId || discoveryBusy} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-            {discoveryBusy ? <LoaderCircle size={14} className="animate-spin" /> : <Target size={14} />} {discoveryBusy ? 'Searching…' : 'Refresh discovery'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => downloadJobsExcel(filteredDiscovered)} disabled={!filteredDiscovered.length} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Download size={14} />Download Excel</button>
+            <button onClick={() => setRefreshCount((count) => count + 1)} disabled={!selectedResumeId || discoveryBusy} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+              {discoveryBusy ? <LoaderCircle size={14} className="animate-spin" /> : <Target size={14} />} {discoveryBusy ? 'Searching…' : 'Refresh discovery'}
+            </button>
+          </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <TextField label="Role / keywords" value={roleFilter} onChange={setRoleFilter} placeholder="Use resume role or refine search" />
-          <TextField label="Location" value={locationFilter} onChange={setLocationFilter} placeholder="City, region, or country" />
+            <label className="block"><span className={labelClass}>Job market</span><select className={inputClass} value={marketFilter} onChange={(event) => setMarketFilter(event.target.value as 'india' | 'international' | 'remote')}><option value="india">India (prioritized)</option><option value="international">International</option><option value="remote">Remote worldwide</option></select></label>
+            <TextField label="City / location" value={locationFilter} onChange={setLocationFilter} placeholder="Optional city, region, or country" />
           <label className="block"><span className={labelClass}>Workplace</span><select className={inputClass} value={workplaceFilter} onChange={(event) => setWorkplaceFilter(event.target.value)}><option value="all">Any workplace</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="on-site">On-site</option></select></label>
           <label className="block"><span className={labelClass}>Employment</span><select className={inputClass} value={employmentFilter} onChange={(event) => setEmploymentFilter(event.target.value)}><option value="all">Any type</option><option value="internship">Internship / graduate</option><option value="full-time">Full-time</option><option value="contract">Contract / part-time</option></select></label>
           <label className="block"><span className={labelClass}>Experience level</span><select className={inputClass} value={experienceFilter} onChange={(event) => setExperienceFilter(event.target.value)}><option value="all">Any level</option><option value="entry">Entry / internship</option><option value="mid">Mid-level</option><option value="senior">Senior / lead</option></select></label>
@@ -1012,6 +1202,9 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
               <span className="text-[10px] text-slate-500">Source: {job.source}{job.isStale ? ' · last seen earlier' : ''}</span>
               <div className="flex flex-wrap gap-2">
+                <button onClick={() => setSelectedDiscoveredJobId((current) => current === job._id ? '' : job._id)} aria-expanded={selectedDiscoveredJobId === job._id} className="min-h-8 rounded-md border border-[#8ebcb1] bg-[#edf5f1] px-2.5 py-1 text-xs font-semibold text-[#286b60] hover:bg-[#e0eee8]">
+                  {selectedDiscoveredJobId === job._id ? 'Hide readiness' : 'View readiness'}
+                </button>
                 <button onClick={() => void toggleSaved(job)} className="inline-flex min-h-8 items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"><Bookmark size={13} fill={job.isSaved ? 'currentColor' : 'none'} />{job.isSaved ? 'Saved' : 'Save'}</button>
                 <button onClick={() => void trackJob(job)} className="min-h-8 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Track</button>
                 <a href={job.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1 rounded-md bg-[#123d38] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#19534c]">Apply at source<ExternalLink size={12} /></a>
@@ -1019,6 +1212,28 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
             </div>
           </article>)}
         </div>
+        {selectedDiscoveredJob && <section className="rounded-xl border border-[#b8d4ca] bg-[#f7faf8] p-5 sm:p-6" aria-live="polite">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-wide text-[#286b60]">Job readiness · source: {selectedDiscoveredJob.source}</p><h3 className="mt-1 text-xl font-bold text-slate-900">{selectedDiscoveredJob.title}</h3><p className="mt-1 text-sm text-slate-600">{selectedDiscoveredJob.company} · {selectedDiscoveredJob.location || 'Location not provided'}</p></div>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div><p className="text-[10px] font-bold uppercase text-slate-500">ATS</p><p className="text-2xl font-bold text-slate-700">{selectedDiscoveredJob.resumeQualityScore}%</p></div>
+              <div><p className="text-[10px] font-bold uppercase text-slate-500">Match</p><p className="text-2xl font-bold text-[#286b60]">{selectedDiscoveredJob.matchScore}%</p></div>
+              <div><p className="text-[10px] font-bold uppercase text-slate-500">Readiness</p><p className="text-2xl font-bold text-slate-900">{selectedDiscoveredJob.readinessScore}%</p></div>
+            </div>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-slate-500">Independent estimates calculated from {resumes.find((resume) => resume._id === selectedResumeId)?.title || 'your selected saved resume'} and this listing. They are not employer decisions or guarantees.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div><h4 className="text-sm font-semibold text-slate-900">Strengths and resume evidence</h4>{selectedDiscoveredJob.strengths.length ? <ul className="mt-2 space-y-1.5 text-sm text-slate-600">{selectedDiscoveredJob.strengths.map((strength) => <li key={strength}>• {strength}</li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No direct strengths were detected in the saved resume text.</p>}</div>
+            <div><h4 className="text-sm font-semibold text-slate-900">Skills to verify or develop</h4>{selectedDiscoveredJob.missingSkills.length ? <div className="mt-2 flex flex-wrap gap-1.5">{selectedDiscoveredJob.missingSkills.map((skill) => <span key={skill} className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">{skill}</span>)}</div> : <p className="mt-2 text-sm text-slate-500">No missing required skills were identified by this text comparison.</p>}</div>
+          </div>
+          <div className="mt-5"><h4 className="text-sm font-semibold text-slate-900">Recommended next steps</h4><ul className="mt-2 grid gap-2 sm:grid-cols-2">{selectedDiscoveredJob.recommendedActions.slice(0, 5).map((action) => <li key={action} className="rounded-lg border border-slate-200 bg-white p-3 text-sm leading-5 text-slate-600">{action}</li>)}</ul></div>
+          <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+            <button onClick={() => navigate('/resumes', { state: { job: { title: selectedDiscoveredJob.title, company: selectedDiscoveredJob.company, description: selectedDiscoveredJob.description } } })} className="rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white hover:bg-[#19534c]">Create tailored resume</button>
+            <button onClick={() => navigate('/cover-letters', { state: { job: { title: selectedDiscoveredJob.title, company: selectedDiscoveredJob.company, description: selectedDiscoveredJob.description } } })} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#8ebcb1]">Prepare cover letter</button>
+            <button onClick={() => void trackJob(selectedDiscoveredJob)} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#8ebcb1]">Save to application tracker</button>
+            <a href={selectedDiscoveredJob.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#8ebcb1]">Open original application<ExternalLink size={14} /></a>
+          </div>
+        </section>}
         {filteredDiscovered.length > visibleJobCount && <button type="button" onClick={() => setVisibleJobCount((count) => count + 20)} className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-[#8ebcb1] hover:bg-slate-50">
           Show more jobs ({filteredDiscovered.length - visibleJobCount} remaining)
         </button>}
@@ -1130,7 +1345,7 @@ function InfoList({ title, items }: { title: string; items: string[] }) {
 export const JobAnalyzerPage: React.FC = () => <JobWorkspacePage />;
 export const SkillGapPage: React.FC = () => <JobWorkspacePage skillFocus />;
 
-const stages = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected'];
+const stages = ['Saved', 'Planned', 'Applied', 'Interview', 'Offer', 'Rejected'];
 export const ApplicationTrackerPage: React.FC = () => {
   const workspace = useWorkspace('application', { company: '', role: '', status: 'Saved', date: '', notes: '', link: '' }, 'Application');
   const { showToast } = useToast();
@@ -1143,9 +1358,9 @@ export const ApplicationTrackerPage: React.FC = () => {
     const documentTitle = `${workspace.fields.company.trim()} — ${workspace.fields.role.trim()}`;
     await workspace.save(workspace.selected ? workspace.title : documentTitle);
   };
-  return <div className="career-module mx-auto max-w-6xl"><PageHeading eyebrow="Keep your search organized" title="Application tracker" description="Save roles, track your progress through each hiring stage, and keep notes close to the application." icon={FileText} />
+  return <div className="career-module mx-auto max-w-6xl"><PageHeading eyebrow="Keep your search organized" title="Application tracker" description="Save roles, track your progress through each hiring stage, and keep notes close to the application. Saving a role does not submit an application." icon={FileText} />
     <WorkspacePicker {...workspace} kind="application" onSelect={workspace.choose} onNew={workspace.newDocument} onDelete={workspace.remove} />
-    {workspace.loading ? <LoadingState /> : <div className="grid gap-5 lg:grid-cols-[.85fr_1.15fr]"><section className={`${cardClass} space-y-4 p-5 sm:p-6`}><TextField label="Company" value={workspace.fields.company} onChange={(v) => workspace.set('company', v)} placeholder="Company name" /><TextField label="Role" value={workspace.fields.role} onChange={(v) => workspace.set('role', v)} placeholder="Job title" /><label className="block"><span className={labelClass}>Stage</span><select className={inputClass} value={workspace.fields.status} onChange={(e) => setStatus(e.target.value)}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select></label><TextField label="Applied / saved date" type="date" value={workspace.fields.date} onChange={(v) => workspace.set('date', v)} /><TextField label="Job link" value={workspace.fields.link} onChange={(v) => workspace.set('link', v)} placeholder="https://…" /><TextField label="Notes" value={workspace.fields.notes} onChange={(v) => workspace.set('notes', v)} multiline rows={5} placeholder="Recruiter, follow-up, interview notes…" />    <SaveButton onClick={() => void saveApplication()} busy={workspace.busy} label={workspace.selected ? 'Update application' : 'Save application'} /></section>
+    {workspace.loading ? <LoadingState /> : <div className="grid gap-5 lg:grid-cols-[.85fr_1.15fr]"><section className={`${cardClass} space-y-4 p-5 sm:p-6`}><TextField label="Company" value={workspace.fields.company} onChange={(v) => workspace.set('company', v)} placeholder="Company name" /><TextField label="Role" value={workspace.fields.role} onChange={(v) => workspace.set('role', v)} placeholder="Job title" /><label className="block"><span className={labelClass}>Stage</span><select className={inputClass} value={workspace.fields.status} onChange={(e) => setStatus(e.target.value)}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select><span className="mt-1 block text-xs text-slate-500">Use Applied only after submitting through the employer’s original application page.</span></label><TextField label="Applied / saved date" type="date" value={workspace.fields.date} onChange={(v) => workspace.set('date', v)} /><TextField label="Original job link" value={workspace.fields.link} onChange={(v) => workspace.set('link', v)} placeholder="https://…" />{workspace.fields.link && <a href={workspace.fields.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-[#286b60]">Open employer application<ExternalLink size={14} /></a>}<TextField label="Notes" value={workspace.fields.notes} onChange={(v) => workspace.set('notes', v)} multiline rows={5} placeholder="Recruiter, follow-up, interview notes…" />    <SaveButton onClick={() => void saveApplication()} busy={workspace.busy} label={workspace.selected ? 'Update application' : 'Save application'} /></section>
       <section className={`${cardClass} p-5 sm:p-6`}><p className="mb-4 text-sm font-bold text-white">Your pipeline <span className="text-slate-500">· {workspace.items.length} roles</span></p>{workspace.items.length ? <div className="space-y-3">{workspace.items.map((item) => <button key={item._id} onClick={() => workspace.choose(item._id)} className={`w-full rounded-xl border p-4 text-left transition ${item._id === workspace.selected ? 'border-cyan-400/50 bg-cyan-400/5' : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'}`}><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-white">{valueOf(item.data, 'role') || item.title}</p><span className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-cyan-200">{valueOf(item.data, 'status') || 'Saved'}</span></div><p className="mt-1 text-sm text-slate-400">{valueOf(item.data, 'company') || 'Company not set'}{valueOf(item.data, 'date') ? ` · ${valueOf(item.data, 'date')}` : ''}</p>{valueOf(item.data, 'notes') && <p className="mt-3 line-clamp-2 text-xs text-slate-500">{valueOf(item.data, 'notes')}</p>}</button>)}</div> : <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center"><Plus className="mx-auto mb-3 text-slate-500" /><p className="font-semibold text-slate-200">No applications yet</p><p className="mt-1 text-sm text-slate-500">Save a role to start tracking your search.</p></div>}</section>
     </div>}</div>;
 };

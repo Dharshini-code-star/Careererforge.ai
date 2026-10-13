@@ -11,6 +11,8 @@ A responsive career workspace built with React, TypeScript, Tailwind CSS, Expres
 - Fact-grounded, individually reviewable AI resume suggestions, with automatic score recalculation after accepted edits. Uploaded originals are never overwritten.
 - Portfolio editor with three preview styles and a public share page. Publishing creates a stable public slug.
 - AI-assisted cover-letter generation through Gemini, with editable saved drafts and text / PDF export. AI is opt-in and requires a server-side key.
+- Job-specific cover-letter drafts are grounded in a selected, saved resume; discovered-job details show separate resume-quality, match, and readiness estimates with actions to prepare a tailored resume, cover letter, and application-tracker entry.
+- Job discovery includes India, international, and remote-worldwide markets, transparent provider status, direct original application links, and an Excel `.xlsx` export for the currently filtered listings.
 - Private, MongoDB-backed job-description library with saved-resume selection, per-job skill and keyword matching, resume evidence, readiness breakdowns, gaps, and next-step recommendations.
 - Resume-driven discovery from public Arbeitnow and Remotive feeds, plus the official Adzuna API when configured. Listings retain provider attribution, posting metadata when present, direct application URLs, skill/readiness comparisons, save controls, and application-tracker integration.
 - Direct search links for LinkedIn Jobs, Naukri, Indeed, Internshala, Wellfound, Adzuna, and company career pages when a supported listing API is unavailable; the app does not scrape or claim to import those results.
@@ -34,6 +36,7 @@ Job discovery provider details:
 - Arbeitnow's public API is used for live listings, mainly from Europe: [API](https://www.arbeitnow.com/api/job-board-api).
 - Remotive's public API is used for remote listings. Requests are cached for six hours and limited to four provider calls per day; its API asks for source attribution and direct links, which are retained with each listing: [API terms](https://remotive.com/api-documentation).
 - Adzuna requires an application ID and key from its [developer portal](https://developer.adzuna.com/). Set `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, and a supported two-letter `ADZUNA_COUNTRY` in `server/.env`. Without credentials, the UI reports Adzuna as unavailable and offers its public search link.
+- India discovery uses Adzuna's India market when credentials are present. International discovery uses `ADZUNA_COUNTRY` (default `gb`); remote-worldwide results are restricted to listings identified as remote. Remotive and Arbeitnow retain their provider attribution and direct URLs.
 - LinkedIn Jobs, Naukri, Indeed, Internshala, Wellfound, and company career pages are not scraped. Where no authorized public integration is configured, the app opens their search pages instead.
 - Discovery is on demand when a resume or search filter changes and can be manually refreshed. Provider results are deduplicated per user and provider ID in MongoDB. Remote/workplace and experience labels are shown only when provided or clearly inferable from listing text; missing salary/date fields stay blank.
 

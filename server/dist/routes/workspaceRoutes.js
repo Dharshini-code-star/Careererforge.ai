@@ -56,7 +56,7 @@ const resumeUpload = (0, multer_1.default)({
 const validKind = (kind) => kinds.includes(kind);
 const validWorkspaceData = (kind, data) => {
     if (kind === 'application') {
-        const statuses = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected'];
+        const statuses = ['Saved', 'Planned', 'Applied', 'Interview', 'Offer', 'Rejected'];
         if (typeof data.company !== 'string' || !data.company.trim() ||
             typeof data.role !== 'string' || !data.role.trim()) {
             return 'Applications require a company and role.';
@@ -303,7 +303,7 @@ router.put('/resume-selection', async (req, res, next) => {
 });
 router.post('/jobs/discover', async (req, res, next) => {
     try {
-        const { resumeId, role, location } = req.body;
+        const { resumeId, role, location, market } = req.body;
         if (typeof resumeId !== 'string' || !mongoose_1.default.isValidObjectId(resumeId)) {
             res.status(400).json({ success: false, message: 'Select a saved resume before discovering jobs.' });
             return;
@@ -311,6 +311,10 @@ router.post('/jobs/discover', async (req, res, next) => {
         if (role !== undefined && (typeof role !== 'string' || role.length > 120) ||
             location !== undefined && (typeof location !== 'string' || location.length > 120)) {
             res.status(400).json({ success: false, message: 'Role and location filters must be 120 characters or fewer.' });
+            return;
+        }
+        if (market !== undefined && !['india', 'international', 'remote'].includes(String(market))) {
+            res.status(400).json({ success: false, message: 'Choose India, international, or remote worldwide for the job market.' });
             return;
         }
         const resume = await WorkspaceItem_js_1.default.findOne({ _id: resumeId, userId: req.user._id, kind: 'resume' }).lean();
@@ -322,6 +326,7 @@ router.post('/jobs/discover', async (req, res, next) => {
         const discovery = await (0, jobProviderService_js_1.discoverProviderJobs)(fields, {
             role: typeof role === 'string' ? role : undefined,
             location: typeof location === 'string' ? location : undefined,
+            market: market === 'international' || market === 'remote' ? market : 'india',
         });
         const now = new Date();
         if (discovery.jobs.length) {
@@ -821,12 +826,36 @@ router.post('/improve-resume', async (req, res) => {
         res.status(502).json({ success: false, message: 'Could not reach the configured AI provider.' });
     }
 });
-router.post('/generate-cover-letter', async (req, res) => {
-    const { jobDescription, company, position, resume } = req.body;
+router.post('/generate-cover-letter', async (req, res, next) => {
+    const { jobDescription, company, position, resumeId } = req.body;
     if (typeof jobDescription !== 'string' || jobDescription.trim().length < 30 || jobDescription.length > 30000 ||
         typeof company !== 'string' || !company.trim() || company.length > 150 ||
-        typeof position !== 'string' || !position.trim() || position.length > 150) {
-        res.status(400).json({ success: false, message: 'Company, position, and a job description of at least 30 characters are required.' });
+        typeof position !== 'string' || !position.trim() || position.length > 150 ||
+        typeof resumeId !== 'string' || !mongoose_1.default.isValidObjectId(resumeId)) {
+        res.status(400).json({ success: false, message: 'A saved resume, company, position, and a job description of at least 30 characters are required.' });
+        return;
+    }
+    const findResume = () => WorkspaceItem_js_1.default.findOne({
+        _id: resumeId,
+        userId: req.user._id,
+        kind: 'resume',
+    }).lean();
+    let resume;
+    try {
+        resume = await findResume();
+    }
+    catch (error) {
+        next(error);
+        return;
+    }
+    if (!resume) {
+        res.status(404).json({ success: false, message: 'The selected saved resume was not found in your workspace.' });
+        return;
+    }
+    const resumeFields = Object.fromEntries(Object.entries(resume.data).filter((entry) => typeof entry[1] === 'string' && entry[1].length <= 12000 &&
+        !['sourceId', 'sourceFileName', 'template'].includes(entry[0])));
+    if (!Object.keys(resumeFields).length) {
+        res.status(422).json({ success: false, message: 'The selected resume has no usable text. Add resume content before generating a letter.' });
         return;
     }
     const apiKey = process.env.GEMINI_API_KEY;
@@ -835,12 +864,7 @@ router.post('/generate-cover-letter', async (req, res) => {
         return;
     }
     try {
-        const profile = resume && typeof resume === 'object' ? JSON.stringify(resume) : JSON.stringify({
-            name: req.user.name,
-            headline: req.user.headline,
-            skills: req.user.skills,
-            targetRole: req.user.targetRole,
-        });
+        const profile = JSON.stringify(resumeFields);
         const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
             method: 'POST',

@@ -155,7 +155,7 @@ export const workspaceService = {
   },
   async discoverJobs(
     resumeId: string,
-    filters: { role?: string; location?: string } = {}
+    filters: { role?: string; location?: string; market?: 'india' | 'international' | 'remote' } = {}
   ): Promise<{ resumeId: string; resumeTitle: string; providers: JobProviderStatus[]; searchLinks: JobSearchLink[]; jobs: DiscoveredJob[]; refreshedAt: string }> {
     const { data } = await api.post<{
       resumeId: string;
