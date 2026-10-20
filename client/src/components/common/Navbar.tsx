@@ -25,17 +25,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, isSidebarOpen }
           {isSidebarOpen ? <X size={19} /> : <Menu size={19} />}
         </button>
         <Link to="/dashboard" className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#123d38] text-white"><FileText size={16} /></span>
-          <span className="text-[15px] font-bold tracking-[-.04em] text-slate-900">careerforge<span className="text-[#27776c]">.ai</span></span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--cf-navy)] text-white"><FileText size={16} /></span>
+          <span className="text-[15px] font-bold tracking-[-.04em] text-slate-900">careerforge<span className="text-[var(--cf-accent-text)]">.ai</span></span>
           <span className="ml-1 hidden h-5 w-px bg-slate-200 sm:block" />
           <span className="hidden text-xs text-slate-500 sm:block">Career workspace</span>
         </Link>
       </div>
       {user && <div className="relative">
-        <button onClick={() => setShowDropdown((open) => !open)} aria-label="Open account menu" aria-expanded={showDropdown} className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b8b7e]">
-          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#e8f0ec] text-xs font-semibold text-[#286a60]">{user.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : user.name.charAt(0).toUpperCase()}</span>
+        <button onClick={() => setShowDropdown((open) => !open)} aria-label="Open account menu" aria-expanded={showDropdown} className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cf-focus)]">
+          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#eaf0f8] text-xs font-semibold text-[var(--cf-accent-text)]">{user.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : user.name.charAt(0).toUpperCase()}</span>
           <span className="hidden text-left sm:block"><span className="block max-w-36 truncate text-xs font-semibold text-slate-800">{user.name}</span><span className="block max-w-36 truncate text-[10px] text-slate-500">{user.targetRole || 'Career profile'}</span></span>
-          <ChevronDown size={14} className="text-slate-400" />
+          <ChevronDown size={14} className="text-slate-500" />
         </button>
         {showDropdown && <>
           <button aria-label="Close account menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setShowDropdown(false)} />

@@ -21,8 +21,8 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const content = (
     <div className="flex flex-col items-center justify-center gap-3">
       <div className="relative flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full blur-md bg-indigo-500/30 animate-pulse" />
-        <Loader2 className={`${sizeClasses[size]} text-indigo-400 animate-spin relative z-10`} />
+        <div className="absolute inset-0 rounded-full blur-md bg-blue-500/25 animate-pulse" />
+        <Loader2 className={`${sizeClasses[size]} text-blue-300 animate-spin relative z-10`} />
       </div>
       {label && <p className="text-sm font-medium text-gray-400 animate-pulse">{label}</p>}
     </div>

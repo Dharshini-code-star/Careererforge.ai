@@ -40,20 +40,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             key={toast.id}
             className={`flex items-start gap-3 p-4 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-300 animate-slide-up ${
               toast.type === 'success'
-                ? 'bg-white border-emerald-200 text-emerald-900'
+                ? 'bg-white border-teal-200 text-teal-900'
                 : toast.type === 'error'
                 ? 'bg-white border-rose-200 text-rose-900'
                 : 'bg-white border-slate-200 text-slate-800'
             }`}
           >
-            {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />}
+            {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />}
             {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />}
-            {toast.type === 'info' && <Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />}
+            {toast.type === 'info' && <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />}
             <p className="text-sm font-medium flex-1">{toast.message}</p>
             <button
               onClick={() => removeToast(toast.id)}
               aria-label="Dismiss notification"
-              className="text-slate-400 hover:text-slate-900 transition-colors"
+              className="text-slate-500 hover:text-slate-900 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

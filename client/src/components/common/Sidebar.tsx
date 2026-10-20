@@ -39,17 +39,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => (
     <aside aria-label="Workspace navigation" className={`app-sidebar fixed bottom-0 left-0 top-[65px] z-40 flex w-[272px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white shadow-xl transition-transform duration-200 lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:translate-x-0 lg:shadow-none ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <nav className="min-h-0 flex-1 space-y-7 overflow-y-auto overscroll-contain px-3 py-5">
         {groups.map((group) => <div key={group.label}>
-          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[.16em] text-slate-400">{group.label}</p>
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[.16em] text-slate-500">{group.label}</p>
           <div className="space-y-1">
-            {group.items.map(({ title, icon: Icon, path }) => <NavLink key={path} to={path} onClick={onClose} className={({ isActive }) => `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b8b7e] ${isActive ? 'bg-[#edf5f1] text-[#20665d]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'}`}>
-              {({ isActive }) => <><Icon size={17} className="shrink-0" strokeWidth={isActive ? 2 : 1.75} /><span className="min-w-0 flex-1 leading-5">{title}</span>{isActive && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[#418a7d]" />}</>}
+            {group.items.map(({ title, icon: Icon, path }) => <NavLink key={path} to={path} onClick={onClose} className={({ isActive }) => `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cf-focus)] ${isActive ? 'bg-[var(--cf-accent-soft)] text-[var(--cf-accent-text)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'}`}>
+              {({ isActive }) => <><Icon size={17} className="shrink-0" strokeWidth={isActive ? 2 : 1.75} /><span className="min-w-0 flex-1 leading-5">{title}</span>{isActive && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[#4777a8]" />}</>}
             </NavLink>)}
           </div>
         </div>)}
       </nav>
       <div className="mt-auto border-t border-slate-100 p-4">
-        <div className="rounded-xl bg-[#f5f7f4] p-3.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-800"><span className="flex h-6 w-6 items-center justify-center rounded-md bg-white text-[#347b70] shadow-sm"><FileText size={13} /></span>Your work, in one place</div>
+        <div className="rounded-xl bg-[#f1f5f9] p-3.5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-800"><span className="flex h-6 w-6 items-center justify-center rounded-md bg-white text-[var(--cf-accent-text)] shadow-sm"><FileText size={13} /></span>Your work, in one place</div>
           <p className="mt-2 text-[11px] leading-5 text-slate-500">Your saved documents and career notes stay in your private workspace.</p>
         </div>
       </div>

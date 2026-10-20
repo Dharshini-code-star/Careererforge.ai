@@ -8,7 +8,7 @@ import {
 import { strToU8, zipSync } from 'fflate';
 import { api } from '../services/api';
 import { workspaceService } from '../services/workspaceService';
-import type { DiscoveredJob, JobMatchResult, JobPosting, JobProviderStatus, JobSearchLink, ResumeAnalysis, ResumeSource, ResumeSuggestion, WorkspaceItem, WorkspaceKind } from '../services/workspaceService';
+import type { DiscoveredJob, JobMatchResult, JobPosting, JobProviderStatus, ResumeAnalysis, ResumeSource, ResumeSuggestion, WorkspaceItem, WorkspaceKind } from '../services/workspaceService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/common/Toast';
 import { PortfolioWebsite } from '../components/portfolio/PortfolioWebsite';
@@ -22,10 +22,10 @@ const emptyResume: Fields = {
 };
 const emptyPortfolio: Fields = {
   name: '', headline: '', about: '', skills: '', experience: '', education: '', projects: '',
-  certifications: '', achievements: '', email: '', website: '', github: '', linkedin: '', photoUrl: '', accentColor: '#286b60', template: 'Modern Developer',
+  certifications: '', achievements: '', email: '', website: '', github: '', linkedin: '', photoUrl: '', accentColor: '#285786', template: 'Modern Developer',
 };
 const emptyLetter: Fields = { company: '', position: '', jobDescription: '', content: '', resumeId: '' };
-const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#43867a] focus:ring-2 focus:ring-[#43867a]/15';
+const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-[var(--cf-focus)] focus:ring-2 focus:ring-[var(--cf-focus)]/15';
 const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600';
 const cardClass = 'rounded-xl border border-slate-200 bg-white shadow-[0_12px_35px_-30px_rgba(15,23,42,.28)]';
 
@@ -98,8 +98,8 @@ function PageHeading({ eyebrow, title, description, icon: Icon }: {
   eyebrow: string; title: string; description: string; icon: React.ElementType;
 }) {
   return <div className="mb-7 flex items-start gap-4">
-    <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3 text-cyan-300"><Icon size={22} /></div>
-    <div><p className="mb-1 text-[11px] font-bold uppercase tracking-[.2em] text-cyan-300">{eyebrow}</p>
+    <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-3 text-blue-300"><Icon size={22} /></div>
+    <div><p className="mb-1 text-[11px] font-bold uppercase tracking-[.2em] text-blue-300">{eyebrow}</p>
       <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
       <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-400">{description}</p>
     </div>
@@ -128,7 +128,7 @@ function WorkspacePicker({ items, selected, onSelect, onNew, kind, onDelete }: {
         {items.map((item) => <option key={item._id} value={item._id}>{item.title}{item.isPublished ? ' · Published' : ''}</option>)}
       </select><ChevronDown size={16} className="pointer-events-none absolute right-3 top-3.5 text-slate-500" />
     </div>
-    <button onClick={onNew} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#8ebcb1] hover:bg-[#f5f8f6] hover:text-[#225e56]">
+    <button onClick={onNew} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[var(--cf-accent-border)] hover:bg-[var(--cf-surface-hover)] hover:text-[var(--cf-navy)]">
       <CirclePlus size={16} /> New
     </button>
     {selected && <button onClick={() => onDelete(selected)} aria-label={`Delete ${kind}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
@@ -239,13 +239,13 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 function SaveButton({ onClick, busy, label = 'Save changes' }: { onClick: () => void; busy: boolean; label?: string }) {
-  return <button onClick={onClick} disabled={busy} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#19534c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#43867a] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60">
+  return <button onClick={onClick} disabled={busy} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[var(--cf-navy)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--cf-navy-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cf-focus)] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60">
     {busy ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}{busy ? 'Saving…' : label}
   </button>;
 }
 
 function PreviewButton({ label = 'Print / save PDF' }: { label?: string }) {
-  return <button onClick={() => window.print()} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#8ebcb1] hover:bg-[#f5f8f6]">
+  return <button onClick={() => window.print()} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[var(--cf-accent-border)] hover:bg-[var(--cf-surface-hover)]">
     <ArrowDownToLine size={16} />{label}
   </button>;
 }
@@ -298,8 +298,8 @@ function ResumeComparison({ original, current }: { original: Record<string, stri
             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Original · {label}</p>
             <p className="whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">{originalValue || 'No extracted content'}</p>
           </div>
-          <div className={`min-w-0 rounded-lg border p-3 ${changed ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-white'}`}>
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800">Edited · {label}{changed ? ' · Changed' : ''}</p>
+          <div className={`min-w-0 rounded-lg border p-3 ${changed ? 'border-teal-200 bg-teal-50/50' : 'border-slate-200 bg-white'}`}>
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-teal-800">Edited · {label}{changed ? ' · Changed' : ''}</p>
             <p className="whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">{currentValue || 'No content'}</p>
           </div>
         </div>;
@@ -563,13 +563,13 @@ export const ResumeBuilderPage: React.FC = () => {
       <div className="space-y-5">
         <section className={`${cardClass} space-y-4 p-5 sm:p-6`}>
           <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#edf5f1] text-[#367b70]"><Upload size={17} /></span>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--cf-accent-soft)] text-[var(--cf-accent-text)]"><Upload size={17} /></span>
             <div><h2 className="text-sm font-semibold text-slate-900">Upload an existing resume</h2>
               <p className="mt-1 text-xs leading-5 text-slate-500">Original PDFs and DOCX files are stored privately in your account. Extracted fields are editable; each improved version is saved separately without overwriting the upload.</p></div>
           </div>
           <input ref={uploadRef} type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="sr-only" aria-label="Upload an existing resume as PDF or DOCX" onChange={(event) => { void uploadResume(event.target.files?.[0]); event.currentTarget.value = ''; }} />
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => uploadRef.current?.click()} disabled={uploading} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#19534c] disabled:cursor-wait disabled:opacity-60">
+            <button onClick={() => uploadRef.current?.click()} disabled={uploading} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--cf-navy)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--cf-navy-hover)] disabled:cursor-wait disabled:opacity-60">
               {uploading ? <LoaderCircle size={16} className="animate-spin" /> : <Upload size={16} />}{uploading ? 'Uploading & extracting…' : 'Choose PDF or DOCX'}
             </button>
             <label className="sr-only" htmlFor="existing-resume-select">Select a previously uploaded original resume</label>
@@ -579,7 +579,7 @@ export const ResumeBuilderPage: React.FC = () => {
             </select>
           </div>
           <p className="text-[11px] leading-5 text-slate-400">PDF and DOCX · Up to 5 MB · Text-based PDFs only (OCR is not performed). Your source file remains unchanged.</p>
-          {workspace.fields.sourceId && <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#d9e8e2] bg-[#f5f9f6] px-4 py-3">
+          {workspace.fields.sourceId && <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--cf-border)] bg-[#f7f9fc] px-4 py-3">
             <div><p className="text-xs font-semibold text-slate-800">Original preserved: {workspace.fields.sourceFileName}</p><p className="mt-1 text-[11px] text-slate-500">Editing a separate version{originalSource?.pageCount ? ` · ${originalSource.pageCount} original PDF pages` : ' · DOCX original'}</p></div>
             <button disabled={downloadBusy || !sources.some((source) => source._id === workspace.fields.sourceId)} onClick={() => {
               const source = sources.find((item) => item._id === workspace.fields.sourceId);
@@ -588,7 +588,7 @@ export const ResumeBuilderPage: React.FC = () => {
               void workspaceService.downloadOriginalResume(source)
                 .catch((error: unknown) => showToast(errorMessage(error, 'Could not download the original.'), 'error'))
                 .finally(() => setDownloadBusy(false));
-            }} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:border-[#8ebcb1] disabled:opacity-60">
+            }} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:border-[var(--cf-accent-border)] disabled:opacity-60">
               {downloadBusy ? <LoaderCircle size={14} className="animate-spin" /> : <Download size={14} />}Download original
             </button>
           </div>}
@@ -619,37 +619,37 @@ export const ResumeBuilderPage: React.FC = () => {
           <TextField label="Certifications (optional)" value={workspace.fields.certifications} onChange={(v) => workspace.set('certifications', v)} multiline rows={2} />
           <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
             <SaveButton onClick={() => void workspace.save()} busy={workspace.busy} label={workspace.selected ? 'Save version changes' : workspace.fields.sourceId ? 'Save as new version' : 'Save resume'} />
-            <button onClick={() => void downloadPdf()} disabled={!resumeText(workspace.fields).trim() || downloadBusy} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#8ebcb1] hover:bg-[#f5f8f6] disabled:opacity-60">
+            <button onClick={() => void downloadPdf()} disabled={!resumeText(workspace.fields).trim() || downloadBusy} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[var(--cf-accent-border)] hover:bg-[var(--cf-surface-hover)] disabled:opacity-60">
               {downloadBusy ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}Download PDF
             </button>
             <PreviewButton />
           </div>
         </section>
         <section className={`${cardClass} space-y-4 p-5 sm:p-6`}>
-          <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#edf5f1] text-[#367b70]"><Sparkles size={17} /></span><div><h2 className="text-sm font-semibold text-slate-900">ATS readability & job match</h2><p className="mt-1 text-xs leading-5 text-slate-500">The resume score reflects transparent content, contact, section, length, skills, and impact checks. Job-match coverage is a separate comparison of your content with the job description.</p></div></div>
+          <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--cf-accent-soft)] text-[var(--cf-accent-text)]"><Sparkles size={17} /></span><div><h2 className="text-sm font-semibold text-slate-900">ATS readability & job match</h2><p className="mt-1 text-xs leading-5 text-slate-500">The resume score reflects transparent content, contact, section, length, skills, and impact checks. Job-match coverage is a separate comparison of your content with the job description.</p></div></div>
           <TextField label="Job description (optional)" value={jobDescription} onChange={setJobDescription} multiline rows={4} placeholder="Paste at least 30 characters of a job description for role-specific keyword matching…" />
           <div className="flex flex-wrap gap-2">
-            <button disabled={analyzing} onClick={() => void analyze()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#8ebcb1] disabled:opacity-60">
+            <button disabled={analyzing} onClick={() => void analyze()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[var(--cf-accent-border)] disabled:opacity-60">
               {analyzing ? <LoaderCircle size={16} className="animate-spin" /> : <Target size={16} />}Analyze ATS readiness & match
             </button>
-            <button disabled={improving} onClick={() => void improveResume()} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#edf5f1] px-4 py-2 text-sm font-semibold text-[#286b60] transition hover:bg-[#e0eee8] disabled:opacity-60">
+            <button disabled={improving} onClick={() => void improveResume()} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--cf-accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--cf-accent-text)] transition hover:bg-[var(--cf-accent-soft-hover)] disabled:opacity-60">
               {improving ? <LoaderCircle size={16} className="animate-spin" /> : <WandSparkles size={16} />}Review AI improvements
             </button>
           </div>
           {suggestions.length > 0 && <section aria-label="Review individual AI suggestions" className="space-y-3">
             <p className="text-xs font-semibold text-slate-700">Compare each suggestion with the original text. Accept or dismiss them individually.</p>
-            {suggestions.map((suggestion) => <article key={suggestion.id} className="rounded-lg border border-[#d9e8e2] bg-[#f7faf8] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-[#39796e]">{suggestion.field} · {suggestion.category}</span><span className="text-[10px] text-slate-500">{suggestion.reason}</span></div>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2"><div className="rounded-md border border-rose-100 bg-rose-50/60 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-rose-700">Original</p><p className="mt-1.5 whitespace-pre-wrap text-xs leading-5 text-slate-700">{suggestion.originalText}</p></div><div className="rounded-md border border-emerald-100 bg-emerald-50/60 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800">Suggested</p><p className="mt-1.5 whitespace-pre-wrap text-xs leading-5 text-slate-700">{suggestion.suggestedText}</p></div></div>
-              <div className="mt-3 flex gap-2"><button onClick={() => acceptSuggestion(suggestion)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#123d38] px-3 text-xs font-semibold text-white hover:bg-[#19534c]"><CheckCircle2 size={14} />Accept</button><button onClick={() => rejectSuggestion(suggestion.id)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"><X size={14} />Dismiss</button></div>
+            {suggestions.map((suggestion) => <article key={suggestion.id} className="rounded-lg border border-[var(--cf-border)] bg-[var(--cf-canvas)] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-[var(--cf-accent-text)]">{suggestion.field} · {suggestion.category}</span><span className="text-[10px] text-slate-500">{suggestion.reason}</span></div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2"><div className="rounded-md border border-rose-100 bg-rose-50/60 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-rose-700">Original</p><p className="mt-1.5 whitespace-pre-wrap text-xs leading-5 text-slate-700">{suggestion.originalText}</p></div><div className="rounded-md border border-teal-100 bg-teal-50/60 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-teal-800">Suggested</p><p className="mt-1.5 whitespace-pre-wrap text-xs leading-5 text-slate-700">{suggestion.suggestedText}</p></div></div>
+              <div className="mt-3 flex gap-2"><button onClick={() => acceptSuggestion(suggestion)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[var(--cf-navy)] px-3 text-xs font-semibold text-white hover:bg-[var(--cf-navy-hover)]"><CheckCircle2 size={14} />Accept</button><button onClick={() => rejectSuggestion(suggestion.id)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"><X size={14} />Dismiss</button></div>
             </article>)}
             <button onClick={() => setSuggestions([])} className="text-xs font-semibold text-slate-500 underline underline-offset-2 hover:text-slate-800">Dismiss all remaining suggestions</button>
           </section>}
           {analysis && analysisSignature === currentAnalysisSignature && <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-semibold text-slate-800">Content-based ATS readiness</p><p className="mt-1 text-[11px] text-slate-500">A transparent checklist, not a prediction of employer ATS software.</p></div><p className="text-2xl font-semibold tracking-tight text-[#286b60]">{analysis.score}<span className="text-sm text-slate-500">/100</span></p></div>
+            <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-semibold text-slate-800">Content-based ATS readiness</p><p className="mt-1 text-[11px] text-slate-500">A transparent checklist, not a prediction of employer ATS software.</p></div><p className="text-2xl font-semibold tracking-tight text-[var(--cf-accent-text)]">{analysis.score}<span className="text-sm text-slate-500">/100</span></p></div>
             <p className="mt-2 text-xs text-slate-600">{analysis.wordCount} words · score uses only your current saved editor content.</p>
             <div className="mt-3 space-y-2">{analysis.components.map((component) => <div key={component.name}><div className="flex justify-between gap-3 text-[11px]"><span className="font-medium text-slate-700">{component.name}</span><span className="shrink-0 text-slate-500">{component.score}/{component.maxScore}</span></div><p className="mt-0.5 text-[10px] leading-4 text-slate-500">{component.detail}</p></div>)}</div>
-            {analysis.jobMatch && <div className="mt-4 border-t border-slate-200 pt-3"><div className="flex items-end justify-between gap-3"><div><p className="text-xs font-semibold text-slate-800">Job-description match</p><p className="mt-1 text-[11px] text-slate-500">{analysis.jobMatch.matchedKeywords.length} of {analysis.jobMatch.analyzedKeywordCount} distinct keywords appear in the resume.</p></div><p className="text-xl font-semibold text-[#286b60]">{analysis.jobMatch.score}%</p></div>
+            {analysis.jobMatch && <div className="mt-4 border-t border-slate-200 pt-3"><div className="flex items-end justify-between gap-3"><div><p className="text-xs font-semibold text-slate-800">Job-description match</p><p className="mt-1 text-[11px] text-slate-500">{analysis.jobMatch.matchedKeywords.length} of {analysis.jobMatch.analyzedKeywordCount} distinct keywords appear in the resume.</p></div><p className="text-xl font-semibold text-[var(--cf-accent-text)]">{analysis.jobMatch.score}%</p></div>
               {analysis.jobMatch.missingKeywords.length > 0 && <div className="mt-3"><p className="text-[11px] font-semibold text-slate-600">Keywords to consider only if they reflect your experience</p><div className="mt-2 flex flex-wrap gap-1.5">{analysis.jobMatch.missingKeywords.map((word) => <span key={word} className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-800">{word}</span>)}</div></div>}
             </div>}
             {analysis && analysisSignature !== currentAnalysisSignature && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-800">Resume content or the job description has changed. Re-analyze to see a current score.</p>}
@@ -674,13 +674,13 @@ function LegacyPortfolioPreview({ fields }: { fields: Fields }) {
     ['Education', fields.education],
     ['Certifications', fields.certifications],
   ].filter((section): section is [string, string] => Boolean(section[1]?.trim()));
-  const accentColor = /^#[0-9a-fA-F]{6}$/.test(fields.accentColor) ? fields.accentColor : '#286b60';
+  const accentColor = /^#[0-9a-fA-F]{6}$/.test(fields.accentColor) ? fields.accentColor : '#285786';
   const photoUrl = safePublicUrl(fields.photoUrl);
   const websiteUrl = safePublicUrl(fields.website);
   return <article className={`portfolio-paper min-h-[570px] overflow-hidden ${dark ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-900'} ${dark ? 'font-mono' : ''}`}>
-    {minimal ? <div className="h-px bg-slate-200" /> : <div className={`h-1.5 ${dark ? 'bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400' : ''}`} style={!dark ? { backgroundColor: accentColor } : undefined} />}
+    {minimal ? <div className="h-px bg-slate-200" /> : <div className={`h-1.5 ${dark ? 'bg-gradient-to-r from-blue-300 via-blue-400 to-violet-400' : ''}`} style={!dark ? { backgroundColor: accentColor } : undefined} />}
     <div className="p-7 sm:p-9">
-      <p className={`text-xs font-bold uppercase tracking-[.22em] ${dark ? 'text-cyan-300' : 'text-slate-500'}`}>{fields.template} · Portfolio</p>
+      <p className={`text-xs font-bold uppercase tracking-[.22em] ${dark ? 'text-blue-300' : 'text-slate-500'}`}>{fields.template} · Portfolio</p>
       {photoUrl && <img src={photoUrl} alt={`${fields.name || 'Profile'} portrait`} className="mt-5 h-20 w-20 rounded-full object-cover" />}
       {fields.photoUrl && !photoUrl && <p role="alert" className="mt-3 text-xs text-rose-700">Profile image needs a valid HTTPS URL.</p>}
       <h2 className="mt-8 text-4xl font-bold tracking-tight">{fields.name || 'Your name'}</h2><p className={`mt-2 text-lg ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{fields.headline || 'Your professional headline'}</p>
@@ -700,8 +700,8 @@ function LegacyPortfolioPreview({ fields }: { fields: Fields }) {
       {sections.map(([heading, content]) => <section key={heading}><h3 className={`mt-8 text-sm font-bold uppercase tracking-widest ${dark ? 'text-white' : 'text-slate-900'}`}>{heading}</h3><p className={`mt-3 whitespace-pre-wrap text-sm leading-6 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{content}</p></section>)}
       {(fields.email || websiteUrl) && <h3 className={`mt-8 text-sm font-bold uppercase tracking-widest ${dark ? 'text-white' : 'text-slate-900'}`}>Contact</h3>}
       <div className="mt-8 flex flex-wrap gap-4">
-        {fields.email && <a href={`mailto:${fields.email}`} className={`inline-flex items-center gap-2 text-sm font-semibold ${dark ? 'text-cyan-200' : ''}`} style={!dark ? { color: accentColor } : undefined}>{fields.email}<ExternalLink size={14} /></a>}
-        {websiteUrl && <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 text-sm font-semibold ${dark ? 'text-cyan-200' : ''}`} style={!dark ? { color: accentColor } : undefined}>{fields.website}<ExternalLink size={14} /></a>}
+        {fields.email && <a href={`mailto:${fields.email}`} className={`inline-flex items-center gap-2 text-sm font-semibold ${dark ? 'text-blue-200' : ''}`} style={!dark ? { color: accentColor } : undefined}>{fields.email}<ExternalLink size={14} /></a>}
+        {websiteUrl && <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 text-sm font-semibold ${dark ? 'text-blue-200' : ''}`} style={!dark ? { color: accentColor } : undefined}>{fields.website}<ExternalLink size={14} /></a>}
       </div>
     </div>
   </article>;
@@ -793,7 +793,7 @@ export const PortfolioPage: React.FC = () => {
     <WorkspacePicker {...workspace} kind="portfolio" onSelect={workspace.choose} onNew={workspace.newDocument} onDelete={workspace.remove} />
     {workspace.loading ? <LoadingState /> : <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(380px,.9fr)]">
       <section className={`${cardClass} space-y-4 p-5 sm:p-6`}>
-        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold text-slate-900">Your story</p><p className="mt-1 text-xs text-slate-500">The public portfolio is generated from the saved content below.</p></div><button onClick={() => void importSelectedResume()} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#8ebcb1]"><Download size={14} />Import selected resume</button></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold text-slate-900">Your story</p><p className="mt-1 text-xs text-slate-500">The public portfolio is generated from the saved content below.</p></div><button onClick={() => void importSelectedResume()} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[var(--cf-accent-border)]"><Download size={14} />Import selected resume</button></div>
         <TextField label="Portfolio title" value={workspace.title} onChange={workspace.setTitle} placeholder="My design portfolio" />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Name" value={workspace.fields.name} onChange={(v) => workspace.set('name', v)} />
@@ -804,7 +804,7 @@ export const PortfolioPage: React.FC = () => {
           <TextField label="Website URL (HTTPS)" value={workspace.fields.website} onChange={(v) => workspace.set('website', v)} placeholder="https://…" />
           <TextField label="Profile image URL (HTTPS)" value={workspace.fields.photoUrl} onChange={(v) => workspace.set('photoUrl', v)} placeholder="https://…" />
           <label className="block"><span className={labelClass}>Website template</span><select className={inputClass} value={workspace.fields.template} onChange={(e) => workspace.set('template', e.target.value)}><option>Modern Developer</option><option>Creative Portfolio</option><option>Minimal Professional</option><option>Dark Tech</option></select></label>
-          <label className="block"><span className={labelClass}>Upload profile image</span><input aria-label="Upload profile image" type="file" accept="image/png,image/jpeg,image/webp" disabled={uploadingImage || workspace.busy} onChange={(event) => { void uploadProfileImage(event.target.files?.[0]); event.currentTarget.value = ''; }} className="block w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-[#edf5f1] file:px-2.5 file:py-1.5 file:text-xs file:font-semibold file:text-[#286b60]" /></label>
+          <label className="block"><span className={labelClass}>Upload profile image</span><input aria-label="Upload profile image" type="file" accept="image/png,image/jpeg,image/webp" disabled={uploadingImage || workspace.busy} onChange={(event) => { void uploadProfileImage(event.target.files?.[0]); event.currentTarget.value = ''; }} className="block w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--cf-accent-soft)] file:px-2.5 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--cf-accent-text)]" /></label>
           <label className="block"><span className={labelClass}>Theme accent</span><input aria-label="Portfolio theme accent" type="color" value={workspace.fields.accentColor} onChange={(event) => workspace.set('accentColor', event.target.value)} className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white p-1" /></label>
           <p className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">Each template has its own layout, typography, and palette.</p>
         </div>
@@ -815,8 +815,8 @@ export const PortfolioPage: React.FC = () => {
         <TextField label="Projects (one per line)" value={workspace.fields.projects} onChange={(v) => workspace.set('projects', v)} multiline rows={6} placeholder="Title | description | React, Node.js | GitHub URL | demo URL | image URL | verified outcome; another outcome" />
         <TextField label="Certifications" value={workspace.fields.certifications} onChange={(v) => workspace.set('certifications', v)} multiline rows={3} />
         <TextField label="Achievements" value={workspace.fields.achievements} onChange={(v) => workspace.set('achievements', v)} multiline rows={3} placeholder="Only include outcomes and recognition you can verify." />
-        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4"><SaveButton onClick={() => void workspace.save()} busy={workspace.busy} />{activePortfolio?.isPublished ? <button onClick={() => void unpublish()} disabled={publishing} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60">{publishing ? <LoaderCircle size={16} className="animate-spin" /> : <Globe size={16} />} Unpublish portfolio</button> : <button onClick={() => void publish()} disabled={publishing || workspace.busy} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#19534c] disabled:opacity-60">{publishing ? <LoaderCircle size={16} className="animate-spin" /> : <Globe size={16} />} Publish portfolio</button>}</div>
-        {publishedUrl && <a href={publishedUrl} target="_blank" rel="noreferrer" className="block break-all rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{publishedUrl} <ExternalLink size={14} className="inline" /></a>}
+        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4"><SaveButton onClick={() => void workspace.save()} busy={workspace.busy} />{activePortfolio?.isPublished ? <button onClick={() => void unpublish()} disabled={publishing} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60">{publishing ? <LoaderCircle size={16} className="animate-spin" /> : <Globe size={16} />} Unpublish portfolio</button> : <button onClick={() => void publish()} disabled={publishing || workspace.busy} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--cf-navy)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--cf-navy-hover)] disabled:opacity-60">{publishing ? <LoaderCircle size={16} className="animate-spin" /> : <Globe size={16} />} Publish portfolio</button>}</div>
+        {publishedUrl && <a href={publishedUrl} target="_blank" rel="noreferrer" className="block break-all rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-800">{publishedUrl} <ExternalLink size={14} className="inline" /></a>}
       </section>
       <div className="xl:sticky xl:top-5 xl:self-start"><p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Live website preview</p><PortfolioWebsite fields={workspace.fields} preview /></div>
     </div>}
@@ -890,12 +890,12 @@ export const CoverLetterPage: React.FC = () => {
         {resumeLoadError && <p role="alert" className="text-sm text-rose-700">{resumeLoadError}</p>}
         <div className="grid gap-4 sm:grid-cols-2"><TextField label="Company" value={workspace.fields.company} onChange={(v) => workspace.set('company', v)} placeholder="Company name" /><TextField label="Position" value={workspace.fields.position} onChange={(v) => workspace.set('position', v)} placeholder="Role title" /></div>
         <TextField label="Job description" value={workspace.fields.jobDescription} onChange={(v) => workspace.set('jobDescription', v)} multiline rows={8} placeholder="Paste the job description to personalize your letter…" />
-        <button onClick={() => void generate()} disabled={generating} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#edf5f1] px-4 py-2 text-sm font-semibold text-[#286b60] transition hover:bg-[#e0eee8] disabled:opacity-60">{generating ? <LoaderCircle size={16} className="animate-spin" /> : <WandSparkles size={16} />} Generate personalized draft</button>
+        <button onClick={() => void generate()} disabled={generating} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--cf-accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--cf-accent-text)] transition hover:bg-[var(--cf-accent-soft-hover)] disabled:opacity-60">{generating ? <LoaderCircle size={16} className="animate-spin" /> : <WandSparkles size={16} />} Generate personalized draft</button>
         <p className="text-xs leading-5 text-slate-500">The AI provider may process the profile and job description you submit. Review the output for accuracy; it should never claim experience you do not have.</p>
       </section>
       <section className={`${cardClass} space-y-4 p-5 sm:p-6`}>
         <TextField label="Edit your letter" value={workspace.fields.content} onChange={(v) => workspace.set('content', v)} multiline rows={18} placeholder="Generate a draft or write your letter here…" />
-        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4"><SaveButton onClick={() => void workspace.save()} busy={workspace.busy} /><button onClick={download} disabled={!workspace.fields.content.trim()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#8ebcb1] disabled:opacity-40"><ArrowDownToLine size={16} /> Download .txt</button><PreviewButton label="Print / save PDF" /></div>
+        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4"><SaveButton onClick={() => void workspace.save()} busy={workspace.busy} /><button onClick={download} disabled={!workspace.fields.content.trim()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[var(--cf-accent-border)] disabled:opacity-40"><ArrowDownToLine size={16} /> Download .txt</button><PreviewButton label="Print / save PDF" /></div>
         <article className="print-document whitespace-pre-wrap text-sm leading-7 text-slate-800">{workspace.fields.content}</article>
       </section>
     </div>}
@@ -912,7 +912,6 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [discovered, setDiscovered] = useState<DiscoveredJob[]>([]);
   const [providers, setProviders] = useState<JobProviderStatus[]>([]);
-  const [searchLinks, setSearchLinks] = useState<JobSearchLink[]>([]);
   const [roleFilter, setRoleFilter] = useState('');
   const [skillsFilter, setSkillsFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
@@ -942,6 +941,21 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   const discoveryRequestRef = useRef(0);
   selectedJobIdRef.current = selectedJobId;
   selectedResumeIdRef.current = selectedResumeId;
+  const searchKeywords = [roleFilter.trim(), skillsFilter.trim()].filter(Boolean).join(' ');
+  const linkedinSearchUrl = new URL('https://www.linkedin.com/jobs/search/');
+  const naukriSearchUrl = new URL('https://www.naukri.com/jobs-in-india');
+  if (searchKeywords) {
+    linkedinSearchUrl.searchParams.set('keywords', searchKeywords);
+    naukriSearchUrl.searchParams.set('keyword', searchKeywords);
+  }
+  if (locationFilter.trim()) {
+    linkedinSearchUrl.searchParams.set('location', locationFilter.trim());
+    naukriSearchUrl.searchParams.set('location', locationFilter.trim());
+  }
+  const jobPortalLinks = [
+    { id: 'linkedin', name: 'LinkedIn Jobs', url: linkedinSearchUrl.toString() },
+    { id: 'naukri', name: 'Naukri', url: naukriSearchUrl.toString() },
+  ];
 
   const calculateMatches = useCallback(async (
     resumeId: string,
@@ -1021,21 +1035,20 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
     if (!selectedResumeId) {
       setDiscovered([]);
       setProviders([]);
-      setSearchLinks([]);
       return;
     }
     setDiscoveryBusy(true);
     setDiscoveryError('');
     try {
       const response = await workspaceService.discoverJobs(selectedResumeId, {
-        role: [roleFilter.trim(), skillsFilter.trim()].filter(Boolean).join(' ') || undefined,
+        role: roleFilter.trim() || undefined,
+        skills: skillsFilter.trim() || undefined,
         location: locationFilter.trim() || undefined,
         market: marketFilter,
       });
       if (requestId !== discoveryRequestRef.current || response.resumeId !== selectedResumeIdRef.current) return;
       setDiscovered(response.jobs);
       setProviders(response.providers);
-      setSearchLinks(response.searchLinks);
     } catch (error) {
       if (requestId === discoveryRequestRef.current && selectedResumeId === selectedResumeIdRef.current) {
         setDiscovered([]);
@@ -1127,10 +1140,10 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
   };
   const filteredDiscovered = discovered.filter((job) => {
     const searchable = `${job.title} ${job.company} ${job.description} ${(job.tags || []).join(' ')}`.toLowerCase();
-    if (roleFilter.trim() && !job.title.toLowerCase().includes(roleFilter.trim().toLowerCase()) &&
-        !(job.tags || []).some((tag) => tag.toLowerCase().includes(roleFilter.trim().toLowerCase()))) return false;
-    if (locationFilter.trim() && !job.location.toLowerCase().includes(locationFilter.trim().toLowerCase())) return false;
-    const requestedSkills = skillsFilter.split(',').map((skill) => skill.trim().toLowerCase()).filter(Boolean);
+    if (roleFilter.trim() && !searchable.includes(roleFilter.trim().toLowerCase())) return false;
+    if (locationFilter.trim() && !job.location.toLowerCase().includes(locationFilter.trim().toLowerCase()) &&
+        !(job.workplace === 'remote' && /\b(remote|worldwide|anywhere)\b/i.test(job.location))) return false;
+    const requestedSkills = skillsFilter.split(/[,\n;|]/).map((skill) => skill.trim().toLowerCase()).filter(Boolean);
     if (requestedSkills.length && !requestedSkills.every((skill) => searchable.includes(skill))) return false;
     if (workplaceFilter !== 'all' && job.workplace !== workplaceFilter) return false;
     if (employmentFilter === 'internship' && !/\b(intern|internship|trainee|graduate)\b/i.test(`${job.employmentType} ${job.title} ${searchable}`)) return false;
@@ -1165,7 +1178,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
     {loading ? <LoadingState /> : loadError ? <section className={`${cardClass} p-6`} role="alert">
       <p className="font-semibold text-rose-800">Your job workspace could not be loaded.</p>
       <p className="mt-2 text-sm text-slate-600">{loadError}</p>
-      <button onClick={() => void loadWorkspace()} className="mt-4 rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white">Try again</button>
+      <button onClick={() => void loadWorkspace()} className="mt-4 rounded-lg bg-[var(--cf-navy)] px-4 py-2 text-sm font-semibold text-white">Try again</button>
     </section> : <div className="space-y-5">
       <section className={`${cardClass} grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:p-5`}>
         <label className="block"><span className={labelClass}>Resume used for all matches</span>
@@ -1185,13 +1198,13 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
       {!resumes.length && <section className={`${cardClass} p-6`}>
         <h2 className="font-semibold text-slate-900">Save a resume to start matching</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">Create a resume or upload an existing one in the resume studio, review the extracted fields, then save it. Only saved resume data is used for matching.</p>
-        <Link to="/resumes" className="mt-4 inline-flex min-h-10 items-center rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white">Open resume studio</Link>
+        <Link to="/resumes" className="mt-4 inline-flex min-h-10 items-center rounded-lg bg-[var(--cf-navy)] px-4 py-2 text-sm font-semibold text-white">Open resume studio</Link>
       </section>}
 
       <section className={`${cardClass} space-y-4 p-4 sm:p-5`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-semibold text-slate-900">Discover real jobs & internships</h2>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Public provider listings are imported with source links. Unavailable boards are provided as direct search links instead.</p></div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Listings below are fetched from Remotive and Arbeitnow APIs. LinkedIn and Naukri open separate external searches; their results are not imported.</p></div>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => downloadJobsExcel(filteredDiscovered)} disabled={!filteredDiscovered.length} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Download size={14} />Download Excel</button>
             <button onClick={() => setRefreshCount((count) => count + 1)} disabled={!selectedResumeId || discoveryBusy} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
@@ -1200,7 +1213,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <TextField label="Role / keywords" value={roleFilter} onChange={setRoleFilter} placeholder="Use resume role or refine search" />
+          <TextField label="Job title / keyword" value={roleFilter} onChange={setRoleFilter} placeholder="Frontend engineer" />
           <TextField label="Skills" value={skillsFilter} onChange={setSkillsFilter} placeholder="React, Node.js, SQL" />
             <label className="block"><span className={labelClass}>Job market</span><select className={inputClass} value={marketFilter} onChange={(event) => setMarketFilter(event.target.value as 'india' | 'international' | 'remote')}><option value="india">India (prioritized)</option><option value="international">International</option><option value="remote">Remote worldwide</option></select></label>
             <TextField label="City / location" value={locationFilter} onChange={setLocationFilter} placeholder="Optional city, region, or country" />
@@ -1208,30 +1221,30 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
           <label className="block"><span className={labelClass}>Employment</span><select className={inputClass} value={employmentFilter} onChange={(event) => setEmploymentFilter(event.target.value)}><option value="all">Any type</option><option value="internship">Internship / graduate</option><option value="full-time">Full-time</option><option value="contract">Contract / part-time</option></select></label>
           <label className="block"><span className={labelClass}>Experience level</span><select className={inputClass} value={experienceFilter} onChange={(event) => setExperienceFilter(event.target.value)}><option value="all">Any level</option><option value="entry">Entry / internship</option><option value="mid">Mid-level</option><option value="senior">Senior / lead</option></select></label>
           <label className="block"><span className={labelClass}>Date posted</span><select className={inputClass} value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="all">Any date</option><option value="7">Past 7 days</option><option value="30">Past 30 days</option><option value="90">Past 90 days</option></select></label>
-          <label className="flex min-h-10 items-center gap-2 self-end text-sm text-slate-700"><input type="checkbox" checked={savedOnly} onChange={(event) => setSavedOnly(event.target.checked)} className="h-4 w-4 accent-[#286b60]" />Saved jobs only</label>
+          <label className="flex min-h-10 items-center gap-2 self-end text-sm text-slate-700"><input type="checkbox" checked={savedOnly} onChange={(event) => setSavedOnly(event.target.checked)} className="h-4 w-4 accent-[#285786]" />Saved jobs only</label>
           <div className="self-end text-xs text-slate-500" aria-live="polite">{filteredDiscovered.length} matching listings</div>
         </div>
-        {providers.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Job provider status">{providers.map((provider) => <span key={provider.id} title={provider.message} className={`rounded-full border px-2.5 py-1 text-[11px] ${provider.status === 'available' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : provider.status === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{provider.name}: {provider.status === 'available' ? `${provider.resultCount} fetched` : provider.status}</span>)}</div>}
+        {providers.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Job provider status">{providers.map((provider) => <span key={provider.id} title={provider.message} className={`rounded-full border px-2.5 py-1 text-[11px] ${provider.status === 'available' ? 'border-teal-200 bg-teal-50 text-teal-800' : provider.status === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{provider.name}: {provider.status === 'available' ? `${provider.resultCount} fetched` : provider.status}</span>)}</div>}
         {providers.map((provider) => provider.status !== 'available' && <p key={`${provider.id}-message`} className="text-xs leading-5 text-amber-800">{provider.name}: {provider.message}</p>)}
         {discoveryError && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{discoveryError}</p>}
-        {searchLinks.length > 0 && <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs font-semibold text-slate-700">Search other job boards directly</p>
-          <div className="mt-2 flex flex-wrap gap-2">{searchLinks.map((link) => <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" title={link.message} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-[#286b60] hover:border-[#8ebcb1]">{link.name}<ExternalLink size={11} /></a>)}</div>
-          <p className="mt-2 text-[11px] leading-4 text-slate-500">LinkedIn, Naukri, Indeed, Internshala and Wellfound do not provide a supported public listing API for this app. These links open their search pages; no listings are scraped or fabricated.</p>
-        </div>}
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs font-semibold text-slate-700">External job portal searches · not API listings</p>
+          <div className="mt-2 flex flex-wrap gap-2">{jobPortalLinks.map((link) => <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-[var(--cf-accent-text)] hover:border-[var(--cf-accent-border)]">{link.name}<ExternalLink size={11} /></a>)}</div>
+          <p className="mt-2 text-[11px] leading-4 text-slate-500">Search keywords and location are prefilled where supported. These links open LinkedIn or Naukri; CareerForgeAI does not scrape or import their results.</p>
+        </div>
         {discoveryBusy && !discovered.length && <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-4 text-sm text-slate-600" role="status"><LoaderCircle size={16} className="animate-spin" />Searching available job providers using this saved resume…</div>}
         {!discoveryBusy && !discoveryError && selectedResumeId && !filteredDiscovered.length && <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center">
           <p className="font-semibold text-slate-800">{discovered.length ? 'No listings match these filters' : 'No relevant provider listings found'}</p>
           <p className="mt-1 text-sm leading-5 text-slate-500">{discovered.length ? 'Adjust location, role, or other filters.' : 'Try a broader role or location, or use the direct job-board searches above.'}</p>
         </div>}
         <div className="grid gap-3 lg:grid-cols-2">
-          {filteredDiscovered.slice(0, visibleJobCount).map((job) => <article key={job._id} className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-[#b8d4ca] hover:shadow-sm">
+          {filteredDiscovered.slice(0, visibleJobCount).map((job) => <article key={job._id} className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-[#b8cbe0] hover:shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0"><h3 className="font-semibold text-slate-900">{job.title}</h3><p className="mt-1 text-sm text-slate-600">{job.company} · {job.location || 'Location not provided'}</p></div>
-              <div className="flex shrink-0 gap-3 text-center"><div><p className="text-[9px] font-bold uppercase text-slate-500">Match</p><p className="text-xl font-bold text-[#286b60]">{job.matchScore}%</p></div><div><p className="text-[9px] font-bold uppercase text-slate-500">ATS</p><p className="text-xl font-bold text-slate-600">{job.resumeQualityScore}%</p></div><div><p className="text-[9px] font-bold uppercase text-slate-500">Ready</p><p className="text-xl font-bold text-slate-800">{job.readinessScore}%</p></div></div>
+              <div className="flex shrink-0 gap-3 text-center"><div><p className="text-[9px] font-bold uppercase text-slate-500">Match</p><p className="text-xl font-bold text-[var(--cf-accent-text)]">{job.matchScore}%</p></div><div><p className="text-[9px] font-bold uppercase text-slate-500">ATS</p><p className="text-xl font-bold text-slate-600">{job.resumeQualityScore}%</p></div><div><p className="text-[9px] font-bold uppercase text-slate-500">Ready</p><p className="text-xl font-bold text-slate-800">{job.readinessScore}%</p></div></div>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] text-slate-600">
-              <span className={pillClass}>{job.source}</span>
+              <span className={pillClass}>API listing · {job.source}</span>
               {job.workplace && <span className={pillClass}>{job.workplace}</span>}
               {job.employmentType && <span className={pillClass}>{job.employmentType}</span>}
               {job.experienceLevel && <span className={pillClass}>{job.experienceLevel}</span>}
@@ -1241,7 +1254,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
             </div>
             <p className="mt-3 line-clamp-3 text-xs leading-5 text-slate-600">{job.description || 'The source did not provide a description snippet.'}</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {(job.requiredSkills || []).slice(0, 7).map((skill) => <span key={skill} className={`rounded border px-2 py-1 text-[10px] ${job.matchedSkills.includes(skill) ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{skill}{job.matchedSkills.includes(skill) ? ' ✓' : ' · gap'}</span>)}
+              {(job.requiredSkills || []).slice(0, 7).map((skill) => <span key={skill} className={`rounded border px-2 py-1 text-[10px] ${job.matchedSkills.includes(skill) ? 'border-teal-200 bg-teal-50 text-teal-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{skill}{job.matchedSkills.includes(skill) ? ' ✓' : ' · gap'}</span>)}
               {(job.preferredSkills || []).slice(0, 3).map((skill) => <span key={skill} className="rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] text-sky-800">{skill} · preferred</span>)}
               {!job.requiredSkills?.length && !job.preferredSkills?.length && (job.tags || []).slice(0, 5).map((tag) => <span key={tag} className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-600">{tag}</span>)}
             </div>
@@ -1249,24 +1262,24 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
             {job.skillsToLearn.length > 0 && <p className="mt-2 line-clamp-2 text-[11px] leading-4 text-amber-800">Skills to review: {job.skillsToLearn.slice(0, 5).join(', ')}{job.skillsToLearn.length > 5 ? '…' : ''}</p>}
             {job.recommendedActions.length > 0 && <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-slate-500">Next step: {job.recommendedActions[0]}</p>}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-              <span className="text-[10px] text-slate-500">Source: {job.source}{job.isStale ? ' · last seen earlier' : ''}</span>
+              <span className="text-[10px] text-slate-500">API source: {job.source}{job.isStale ? ' · last seen earlier' : ''}</span>
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => setSelectedDiscoveredJobId((current) => current === job._id ? '' : job._id)} aria-expanded={selectedDiscoveredJobId === job._id} className="min-h-8 rounded-md border border-[#8ebcb1] bg-[#edf5f1] px-2.5 py-1 text-xs font-semibold text-[#286b60] hover:bg-[#e0eee8]">
+                <button onClick={() => setSelectedDiscoveredJobId((current) => current === job._id ? '' : job._id)} aria-expanded={selectedDiscoveredJobId === job._id} className="min-h-8 rounded-md border border-[var(--cf-accent-border)] bg-[var(--cf-accent-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--cf-accent-text)] hover:bg-[var(--cf-accent-soft-hover)]">
                   {selectedDiscoveredJobId === job._id ? 'Hide readiness' : 'View readiness'}
                 </button>
                 <button onClick={() => void toggleSaved(job)} className="inline-flex min-h-8 items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"><Bookmark size={13} fill={job.isSaved ? 'currentColor' : 'none'} />{job.isSaved ? 'Saved' : 'Save'}</button>
                 <button onClick={() => void trackJob(job)} className="min-h-8 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Track</button>
-                <a href={job.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1 rounded-md bg-[#123d38] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#19534c]">Apply at source<ExternalLink size={12} /></a>
+                <a href={job.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1 rounded-md bg-[var(--cf-navy)] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[var(--cf-navy-hover)]">Apply at source<ExternalLink size={12} /></a>
               </div>
             </div>
           </article>)}
         </div>
-        {selectedDiscoveredJob && <section className="rounded-xl border border-[#b8d4ca] bg-[#f7faf8] p-5 sm:p-6" aria-live="polite">
+        {selectedDiscoveredJob && <section className="rounded-xl border border-[#b8cbe0] bg-[var(--cf-canvas)] p-5 sm:p-6" aria-live="polite">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div><p className="text-xs font-semibold uppercase tracking-wide text-[#286b60]">Job readiness · source: {selectedDiscoveredJob.source}</p><h3 className="mt-1 text-xl font-bold text-slate-900">{selectedDiscoveredJob.title}</h3><p className="mt-1 text-sm text-slate-600">{selectedDiscoveredJob.company} · {selectedDiscoveredJob.location || 'Location not provided'}</p></div>
+            <div><p className="text-xs font-semibold uppercase tracking-wide text-[var(--cf-accent-text)]">Job readiness · source: {selectedDiscoveredJob.source}</p><h3 className="mt-1 text-xl font-bold text-slate-900">{selectedDiscoveredJob.title}</h3><p className="mt-1 text-sm text-slate-600">{selectedDiscoveredJob.company} · {selectedDiscoveredJob.location || 'Location not provided'}</p></div>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div><p className="text-[10px] font-bold uppercase text-slate-500">ATS</p><p className="text-2xl font-bold text-slate-700">{selectedDiscoveredJob.resumeQualityScore}%</p></div>
-              <div><p className="text-[10px] font-bold uppercase text-slate-500">Match</p><p className="text-2xl font-bold text-[#286b60]">{selectedDiscoveredJob.matchScore}%</p></div>
+              <div><p className="text-[10px] font-bold uppercase text-slate-500">Match</p><p className="text-2xl font-bold text-[var(--cf-accent-text)]">{selectedDiscoveredJob.matchScore}%</p></div>
               <div><p className="text-[10px] font-bold uppercase text-slate-500">Readiness</p><p className="text-2xl font-bold text-slate-900">{selectedDiscoveredJob.readinessScore}%</p></div>
             </div>
           </div>
@@ -1277,13 +1290,13 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
           </div>
           <div className="mt-5"><h4 className="text-sm font-semibold text-slate-900">Recommended next steps</h4><ul className="mt-2 grid gap-2 sm:grid-cols-2">{selectedDiscoveredJob.recommendedActions.slice(0, 5).map((action) => <li key={action} className="rounded-lg border border-slate-200 bg-white p-3 text-sm leading-5 text-slate-600">{action}</li>)}</ul></div>
           <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
-            <button onClick={() => navigate('/resumes', { state: { job: { title: selectedDiscoveredJob.title, company: selectedDiscoveredJob.company, description: selectedDiscoveredJob.description } } })} className="rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white hover:bg-[#19534c]">Create tailored resume</button>
-            <button onClick={() => navigate('/cover-letters', { state: { job: { title: selectedDiscoveredJob.title, company: selectedDiscoveredJob.company, description: selectedDiscoveredJob.description } } })} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#8ebcb1]">Prepare cover letter</button>
-            <button onClick={() => void trackJob(selectedDiscoveredJob)} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#8ebcb1]">Save to application tracker</button>
-            <a href={selectedDiscoveredJob.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#8ebcb1]">Open original application<ExternalLink size={14} /></a>
+            <button onClick={() => navigate('/resumes', { state: { job: { title: selectedDiscoveredJob.title, company: selectedDiscoveredJob.company, description: selectedDiscoveredJob.description } } })} className="rounded-lg bg-[var(--cf-navy)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--cf-navy-hover)]">Create tailored resume</button>
+            <button onClick={() => navigate('/cover-letters', { state: { job: { title: selectedDiscoveredJob.title, company: selectedDiscoveredJob.company, description: selectedDiscoveredJob.description } } })} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[var(--cf-accent-border)]">Prepare cover letter</button>
+            <button onClick={() => void trackJob(selectedDiscoveredJob)} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[var(--cf-accent-border)]">Save to application tracker</button>
+            <a href={selectedDiscoveredJob.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[var(--cf-accent-border)]">Open original application<ExternalLink size={14} /></a>
           </div>
         </section>}
-        {filteredDiscovered.length > visibleJobCount && <button type="button" onClick={() => setVisibleJobCount((count) => count + 20)} className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-[#8ebcb1] hover:bg-slate-50">
+        {filteredDiscovered.length > visibleJobCount && <button type="button" onClick={() => setVisibleJobCount((count) => count + 20)} className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-[var(--cf-accent-border)] hover:bg-slate-50">
           Show more jobs ({filteredDiscovered.length - visibleJobCount} remaining)
         </button>}
       </section>
@@ -1305,7 +1318,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
           <TextField label="Company" value={form.company} onChange={(value) => setForm((current) => ({ ...current, company: value }))} placeholder="Company name" />
           <TextField label="Job description" value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} multiline rows={11} placeholder="Paste the full job description, including skills and experience requirements…" />
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => void saveJob()} disabled={saving || form.title.trim().length === 0 || form.company.trim().length === 0 || form.description.trim().length < 30} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+            <button onClick={() => void saveJob()} disabled={saving || form.title.trim().length === 0 || form.company.trim().length === 0 || form.description.trim().length < 30} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--cf-navy)] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
               {saving ? <LoaderCircle size={15} className="animate-spin" /> : <Save size={15} />}{saving ? 'Saving…' : editingJobId ? 'Update job & refresh matches' : 'Save job & match'}
             </button>
             {editingJobId && <button onClick={() => { setEditingJobId(''); setSelectedJobId(''); setForm(emptyJob); }} className="min-h-10 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">New job</button>}
@@ -1316,7 +1329,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
         <section className={`${cardClass} min-h-96 p-5 sm:p-6`}>
           {matching && <div className="mb-4 flex items-center gap-2 text-sm text-slate-500" role="status"><LoaderCircle size={15} className="animate-spin" />Recalculating matches from your saved resume…</div>}
           {!activeJob ? <div className="flex min-h-80 flex-col items-center justify-center text-center">
-            <FileText className="mb-4 text-[#43867a]" size={30} />
+            <FileText className="mb-4 text-[var(--cf-accent)]" size={30} />
             <h2 className="font-semibold text-slate-900">Your job analysis will appear here</h2>
             <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">Save a job description and select a saved resume to see the comparison.</p>
           </div> : !selectedResumeId ? <div className="py-10 text-center">
@@ -1331,7 +1344,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
                 <h2 className="mt-1 text-xl font-bold text-slate-900">{result.jobTitle}</h2>
                 <p className="mt-1 text-sm text-slate-600">{result.company} <span className="text-slate-400">· Matched with {result.resumeTitle}</span></p></div>
               <div className="flex gap-5 text-center">
-                <div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Match</p><p className="mt-1 text-3xl font-bold text-[#286b60]">{result.matchScore}<span className="text-base">%</span></p></div>
+                <div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Match</p><p className="mt-1 text-3xl font-bold text-[var(--cf-accent-text)]">{result.matchScore}<span className="text-base">%</span></p></div>
                 <div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Readiness</p><p className="mt-1 text-3xl font-bold text-slate-800">{result.readinessScore}<span className="text-base">%</span></p></div>
               </div>
             </div>
@@ -1349,13 +1362,13 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
             <div className="mt-5 space-y-3">
               {result.scoreDetails.map((detail) => <div key={detail.name}>
                 <div className="mb-1 flex justify-between gap-3 text-xs"><span className="font-semibold text-slate-700">{detail.name}</span><span className="text-slate-500">{detail.score}/{detail.maxScore}</span></div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#43867a]" style={{ width: `${detail.maxScore ? (detail.score / detail.maxScore) * 100 : 0}%` }} /></div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#386ba3]" style={{ width: `${detail.maxScore ? (detail.score / detail.maxScore) * 100 : 0}%` }} /></div>
                 <p className="mt-1 text-[11px] leading-4 text-slate-500">{detail.detail}</p>
               </div>)}
             </div>
             {result.requirements.length > 0 && <div className="mt-6">
               <h3 className="text-sm font-semibold text-slate-900">Skills identified in the job description</h3>
-              <div className="mt-2 flex flex-wrap gap-2">{result.requirements.map((skill) => <span key={skill} className={`${pillClass} ${result.matchedSkills.includes(skill) ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{skill}{result.matchedSkills.includes(skill) ? ' · in resume' : ' · not found'}</span>)}</div>
+              <div className="mt-2 flex flex-wrap gap-2">{result.requirements.map((skill) => <span key={skill} className={`${pillClass} ${result.matchedSkills.includes(skill) ? 'border-teal-200 bg-teal-50 text-teal-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{skill}{result.matchedSkills.includes(skill) ? ' · in resume' : ' · not found'}</span>)}</div>
               <p className="mt-2 text-[11px] text-slate-500">“Not found” means absent from the saved resume text, not necessarily absent from your experience.</p>
             </div>}
             <InfoList title="Skills to review or learn (if applicable)" items={result.skillsToLearn} />
@@ -1363,7 +1376,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
             {result.gaps.length > 0 && <InfoList title="Gaps to review" items={result.gaps} />}
             {result.matchingEvidence.length > 0 && <div className="mt-6">
               <h3 className="text-sm font-semibold text-slate-900">Evidence from the selected resume</h3>
-              <ul className="mt-2 space-y-2">{result.matchingEvidence.slice(0, 12).map((entry, index) => <li key={`${entry.skill}-${index}`} className="rounded-lg border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600"><span className="font-semibold text-[#286b60]">{entry.skill}: </span>{entry.evidence}</li>)}</ul>
+              <ul className="mt-2 space-y-2">{result.matchingEvidence.slice(0, 12).map((entry, index) => <li key={`${entry.skill}-${index}`} className="rounded-lg border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600"><span className="font-semibold text-[var(--cf-accent-text)]">{entry.skill}: </span>{entry.evidence}</li>)}</ul>
             </div>}
             {result.missingJobKeywords.length > 0 && <div className="mt-6">
               <h3 className="text-sm font-semibold text-slate-900">Other job-description terms not found</h3>
@@ -1374,7 +1387,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
               Education and experience are inferred only from resume and job-description text. Missing information is not proof of ineligibility; review the original posting and confirm requirements yourself.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/resumes" className="rounded-lg bg-[#123d38] px-4 py-2 text-sm font-semibold text-white hover:bg-[#19534c]">Review selected resume</Link>
+              <Link to="/resumes" className="rounded-lg bg-[var(--cf-navy)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--cf-navy-hover)]">Review selected resume</Link>
               <button onClick={() => void calculateMatches(selectedResumeId, jobs)} disabled={matching} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Recalculate match</button>
             </div>
           </div>}
@@ -1387,7 +1400,7 @@ function JobWorkspacePage({ skillFocus = false }: { skillFocus?: boolean }) {
 function InfoList({ title, items }: { title: string; items: string[] }) {
   return <div className="mt-6">
     <h3 className="text-sm font-semibold text-slate-900">{title} <span className="font-normal text-slate-500">({items.length})</span></h3>
-    {items.length ? <ul className="mt-2 space-y-2">{items.map((item, index) => <li key={`${index}-${item}`} className="flex gap-2 text-sm leading-5 text-slate-600"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#43867a]" />{item}</li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No items were identified.</p>}
+    {items.length ? <ul className="mt-2 space-y-2">{items.map((item, index) => <li key={`${index}-${item}`} className="flex gap-2 text-sm leading-5 text-slate-600"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#386ba3]" />{item}</li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No items were identified.</p>}
   </div>;
 }
 
@@ -1409,8 +1422,8 @@ const LegacyApplicationTrackerPage: React.FC = () => {
   };
   return <div className="career-module mx-auto max-w-6xl"><PageHeading eyebrow="Keep your search organized" title="Application tracker" description="Save roles, track your progress through each hiring stage, and keep notes close to the application. Saving a role does not submit an application." icon={FileText} />
     <WorkspacePicker {...workspace} kind="application" onSelect={workspace.choose} onNew={workspace.newDocument} onDelete={workspace.remove} />
-    {workspace.loading ? <LoadingState /> : <div className="grid gap-5 lg:grid-cols-[.85fr_1.15fr]"><section className={`${cardClass} space-y-4 p-5 sm:p-6`}><TextField label="Company" value={workspace.fields.company} onChange={(v) => workspace.set('company', v)} placeholder="Company name" /><TextField label="Role" value={workspace.fields.role} onChange={(v) => workspace.set('role', v)} placeholder="Job title" /><label className="block"><span className={labelClass}>Stage</span><select className={inputClass} value={workspace.fields.status} onChange={(e) => setStatus(e.target.value)}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select><span className="mt-1 block text-xs text-slate-500">Use Applied only after submitting through the employer’s original application page.</span></label><TextField label="Applied / saved date" type="date" value={workspace.fields.date} onChange={(v) => workspace.set('date', v)} /><TextField label="Original job link" value={workspace.fields.link} onChange={(v) => workspace.set('link', v)} placeholder="https://…" />{workspace.fields.link && <a href={workspace.fields.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-[#286b60]">Open employer application<ExternalLink size={14} /></a>}<TextField label="Notes" value={workspace.fields.notes} onChange={(v) => workspace.set('notes', v)} multiline rows={5} placeholder="Recruiter, follow-up, interview notes…" />    <SaveButton onClick={() => void saveApplication()} busy={workspace.busy} label={workspace.selected ? 'Update application' : 'Save application'} /></section>
-      <section className={`${cardClass} p-5 sm:p-6`}><p className="mb-4 text-sm font-bold text-white">Your pipeline <span className="text-slate-500">· {workspace.items.length} roles</span></p>{workspace.items.length ? <div className="space-y-3">{workspace.items.map((item) => <button key={item._id} onClick={() => workspace.choose(item._id)} className={`w-full rounded-xl border p-4 text-left transition ${item._id === workspace.selected ? 'border-cyan-400/50 bg-cyan-400/5' : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'}`}><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-white">{valueOf(item.data, 'role') || item.title}</p><span className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-cyan-200">{valueOf(item.data, 'status') || 'Saved'}</span></div><p className="mt-1 text-sm text-slate-400">{valueOf(item.data, 'company') || 'Company not set'}{valueOf(item.data, 'date') ? ` · ${valueOf(item.data, 'date')}` : ''}</p>{valueOf(item.data, 'notes') && <p className="mt-3 line-clamp-2 text-xs text-slate-500">{valueOf(item.data, 'notes')}</p>}</button>)}</div> : <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center"><Plus className="mx-auto mb-3 text-slate-500" /><p className="font-semibold text-slate-200">No applications yet</p><p className="mt-1 text-sm text-slate-500">Save a role to start tracking your search.</p></div>}</section>
+    {workspace.loading ? <LoadingState /> : <div className="grid gap-5 lg:grid-cols-[.85fr_1.15fr]"><section className={`${cardClass} space-y-4 p-5 sm:p-6`}><TextField label="Company" value={workspace.fields.company} onChange={(v) => workspace.set('company', v)} placeholder="Company name" /><TextField label="Role" value={workspace.fields.role} onChange={(v) => workspace.set('role', v)} placeholder="Job title" /><label className="block"><span className={labelClass}>Stage</span><select className={inputClass} value={workspace.fields.status} onChange={(e) => setStatus(e.target.value)}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select><span className="mt-1 block text-xs text-slate-500">Use Applied only after submitting through the employer’s original application page.</span></label><TextField label="Applied / saved date" type="date" value={workspace.fields.date} onChange={(v) => workspace.set('date', v)} /><TextField label="Original job link" value={workspace.fields.link} onChange={(v) => workspace.set('link', v)} placeholder="https://…" />{workspace.fields.link && <a href={workspace.fields.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--cf-accent-text)]">Open employer application<ExternalLink size={14} /></a>}<TextField label="Notes" value={workspace.fields.notes} onChange={(v) => workspace.set('notes', v)} multiline rows={5} placeholder="Recruiter, follow-up, interview notes…" />    <SaveButton onClick={() => void saveApplication()} busy={workspace.busy} label={workspace.selected ? 'Update application' : 'Save application'} /></section>
+      <section className={`${cardClass} p-5 sm:p-6`}><p className="mb-4 text-sm font-bold text-white">Your pipeline <span className="text-slate-500">· {workspace.items.length} roles</span></p>{workspace.items.length ? <div className="space-y-3">{workspace.items.map((item) => <button key={item._id} onClick={() => workspace.choose(item._id)} className={`w-full rounded-xl border p-4 text-left transition ${item._id === workspace.selected ? 'border-blue-400/50 bg-blue-400/5' : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'}`}><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-white">{valueOf(item.data, 'role') || item.title}</p><span className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-blue-200">{valueOf(item.data, 'status') || 'Saved'}</span></div><p className="mt-1 text-sm text-slate-400">{valueOf(item.data, 'company') || 'Company not set'}{valueOf(item.data, 'date') ? ` · ${valueOf(item.data, 'date')}` : ''}</p>{valueOf(item.data, 'notes') && <p className="mt-3 line-clamp-2 text-xs text-slate-500">{valueOf(item.data, 'notes')}</p>}</button>)}</div> : <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center"><Plus className="mx-auto mb-3 text-slate-500" /><p className="font-semibold text-slate-200">No applications yet</p><p className="mt-1 text-sm text-slate-500">Save a role to start tracking your search.</p></div>}</section>
     </div>}</div>;
 };
 
@@ -1428,7 +1441,7 @@ export const PublicPortfolioPage: React.FC = () => {
       .then(({ data }) => setItem(data.item))
       .catch((reason: unknown) => setError(errorMessage(reason, 'This portfolio could not be found.')));
   }, [slug]);
-  if (error) return <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center"><div><h1 className="text-2xl font-bold text-white">Portfolio unavailable</h1><p className="mt-2 text-slate-400">{error}</p><Link to="/" className="mt-5 inline-block text-cyan-300">CareerForgeAI home</Link></div></div>;
+  if (error) return <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center"><div><h1 className="text-2xl font-bold text-white">Portfolio unavailable</h1><p className="mt-2 text-slate-400">{error}</p><Link to="/" className="mt-5 inline-block text-blue-300">CareerForgeAI home</Link></div></div>;
   if (!item) return <LoadingState />;
   const fields = Object.fromEntries(Object.entries(item.data).map(([key, value]) => [key, typeof value === 'string' ? value : '']));
   return <PortfolioWebsite fields={fields} />;
