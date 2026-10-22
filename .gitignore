@@ -1,0 +1,10 @@
+# Local credentials and environment-specific settings
+server/.env
+client/.env
+*.local
+
+# Dependencies and tool output
+node_modules/
+client/node_modules/
+server/node_modules/
+*.tsbuildinfo
