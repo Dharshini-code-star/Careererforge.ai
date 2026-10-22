@@ -29,6 +29,10 @@
     "tsx": "^4.16.5",
     "typescript": "^5.5.4"
   },
+  "resolutions": {
+    "**/@types/express": "4.17.21",
+    "**/@types/express-serve-static-core": "4.19.6"
+  },
   "overrides": {
     "argparse": "2.0.1"
   }
